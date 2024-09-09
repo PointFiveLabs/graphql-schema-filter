@@ -1,0 +1,28 @@
+type Todo @expose {
+  id: ID!
+  text: String!
+  done: Boolean!
+  user: User!
+  isGlobal: Boolean @hide
+}
+
+type User @expose {
+  id: ID!
+  name: String!
+}
+
+input NewTodo @expose {
+  text: String!
+  userId: String!
+  isGlobal: Boolean @hide
+}
+
+type Query {
+  todos: [Todo!]! @expose
+  internalQuery: Boolean!
+}
+
+type Mutation {
+  createTodo(input: NewTodo!): Todo! @expose
+  internalMutation: Boolean!
+}
