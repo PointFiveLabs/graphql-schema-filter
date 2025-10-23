@@ -10,10 +10,20 @@ import (
 func (fs FilteredSchema) filterTypes(types map[string]*ast.Definition) map[string]*ast.Definition {
 	collectedTypes := make(map[string]*ast.Definition)
 	for t, def := range types {
-		// Skips the type if it's neither built-in, exposed via directives, nor a scalar
-		if !lo.Contains(fs.supportedBuiltInAttributes, strings.ToLower(def.Name)) && !fs.mustExposeTypesByDirectives(def.Directives) && def.Kind != ast.Scalar {
+		// Include type if:
+		// 1. It's a built-in type
+		// 2. It has @expose directive (explicitly exposed)
+		// 3. It's a scalar
+		// 4. It's referenced by an exposed operation (new behavior)
+		isBuiltIn := lo.Contains(fs.supportedBuiltInAttributes, strings.ToLower(def.Name))
+		isExplicitlyExposed := fs.mustExposeTypesByDirectives(def.Directives)
+		isScalar := def.Kind == ast.Scalar
+		isReferenced := fs.referencedTypes[def.Name]
+
+		if !isBuiltIn && !isExplicitlyExposed && !isScalar && !isReferenced {
 			continue
 		}
+
 		switch def.Kind {
 		case ast.Object, ast.Interface, ast.Union, ast.InputObject, ast.Scalar:
 			// Filter fields of operations (Query and Mutation) differently from other types
