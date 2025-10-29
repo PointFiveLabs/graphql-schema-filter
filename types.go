@@ -18,7 +18,7 @@ func (fs FilteredSchema) filterTypes(types map[string]*ast.Definition) map[strin
 		case ast.Object, ast.Interface, ast.Union, ast.InputObject, ast.Scalar:
 			// Filter fields of operations (Query and Mutation) differently from other types
 			def.Fields = lo.Filter(def.Fields, func(fd *ast.FieldDefinition, _ int) bool {
-				if lo.Contains(builtInOperations, strings.ToLower(def.Name)) {
+				if lo.Contains(fs.options.builtInOperations, strings.ToLower(def.Name)) {
 					fd.Arguments = fs.filterDefinitionArguments(fd.Arguments)
 					return lo.Contains(fs.supportedBuiltInAttributes, strings.ToLower(fd.Name)) || fs.mustExposeTypesByDirectives(fd.Directives)
 				}
