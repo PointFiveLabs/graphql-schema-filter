@@ -173,7 +173,7 @@ func TestIntrospectionFilterMiddleware_HidePredicate(t *testing.T) {
 
 	middleware := filter.NewSchemaFilterWithOptions(
 		schema,
-		filter.WithExposeDirective("public"),
+		filter.WithPublicDirective("public"),
 		filter.WithIntrospectionHidePredicate(predicate),
 	).GetIntrospectionMiddleware()
 

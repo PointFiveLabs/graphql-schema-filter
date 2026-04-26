@@ -14,14 +14,12 @@ type FilteredSchema struct {
 var builtInTypes = []string{"__schema", "__field", "__type", "__typekind", "__inputvalue", "__enumvalue", "__directive", "__directivelocation"}
 
 // NewSchemaFilterWithOptions creates a new schema filter with flexible options.
-// This is the recommended way to create a schema filter.
 //
 // Example:
 //
 //	filter := NewSchemaFilterWithOptions(
 //	    schema,
-//	    WithExposeDirective("expose"),
-//	    WithInternalDirective("internal"),
+//	    WithPublicDirective("public"),
 //	    WithHideDirective("hide"),
 //	)
 func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSchema {
@@ -40,30 +38,30 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 	}
 }
 
-// GetIntrospectionMiddleware returns a gqlgen middleware that hides fields with internal directives
-// from GraphQL introspection. This is necessary because the SchemaFilter operates at build-time,
-// but @internal fields need to be executable (included in schema) yet hidden from introspection (runtime).
+// GetIntrospectionMiddleware returns a gqlgen middleware that hides fields from
+// GraphQL introspection based on the configured predicate.
 //
 // Usage:
 //
-//	schemaFilter := filter.NewSchemaFilterWithOptions(schema, filter.WithInternalDirective("internal"))
+//	schemaFilter := filter.NewSchemaFilterWithOptions(schema,
+//	    filter.WithPublicDirective("public"),
+//	    filter.WithIntrospectionHidePredicate(predicate),
+//	)
 //	middleware := schemaFilter.GetIntrospectionMiddleware()
-//	// Register middleware with gqlgen server
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
 	return &IntrospectionFilterMiddleware{
-		Schema:             fs.Schema,
-		InternalDirectives: fs.options.internalDirectives,
-		HidePredicate:      fs.options.introspectionHidePredicate,
+		Schema:        fs.Schema,
+		HidePredicate: fs.options.introspectionHidePredicate,
 	}
 }
 
 // NewSchemaFilter creates a new schema filter using the legacy API.
 // Deprecated: Use NewSchemaFilterWithOptions instead for more flexibility.
-func NewSchemaFilter(schema *ast.Schema, exposeDirective, hideDirective string, overrideBuiltInOperations *[]string) *FilteredSchema {
+func NewSchemaFilter(schema *ast.Schema, publicDirective, hideDirective string, overrideBuiltInOperations *[]string) *FilteredSchema {
 	opts := []Option{}
 
-	if exposeDirective != "" {
-		opts = append(opts, WithExposeDirective(exposeDirective))
+	if publicDirective != "" {
+		opts = append(opts, WithPublicDirective(publicDirective))
 	}
 	if hideDirective != "" {
 		opts = append(opts, WithHideDirective(hideDirective))
@@ -101,36 +99,18 @@ func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directive
 }
 
 // shouldExposeFieldsByDirectives checks if a field should be included in the filtered schema.
-// Returns true if the field does NOT have a hide or internal directive.
-// Fields with @hide are completely removed from the schema.
-// Fields with @internal are kept in the schema but marked for middleware to hide from introspection.
+// Returns true if the field does NOT have a hide directive.
 func (fs FilteredSchema) shouldExposeFieldsByDirectives(directives ast.DirectiveList) bool {
-	// Hide if has hide directive - field is removed entirely
-	if fs.hasAnyDirective(directives, fs.options.hideDirectives) {
-		return false
-	}
-	// Hide if has internal directive - field exists but should be hidden from introspection by middleware
-	if fs.hasAnyDirective(directives, fs.options.internalDirectives) {
-		return false
-	}
-	return true
+	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
 // mustExposeTypesByDirectives checks if a Query/Mutation field or type must be exposed.
-// Returns true if the field/type has an @expose or @internal directive, and does NOT have @hide.
-// - @expose: Field is visible and executable
-// - @internal: Field is executable but should be hidden from introspection (by middleware)
-// - @hide: Field is completely removed
+// Returns true if the field/type has a @public directive, and does NOT have @hide.
 func (fs FilteredSchema) mustExposeTypesByDirectives(directives ast.DirectiveList) bool {
-	// Must have expose or internal to be included
-	hasExpose := fs.hasAnyDirective(directives, fs.options.exposeDirectives)
-	hasInternal := fs.hasAnyDirective(directives, fs.options.internalDirectives)
-
-	if !hasExpose && !hasInternal {
+	if !fs.hasAnyDirective(directives, fs.options.publicDirectives) {
 		return false
 	}
 
-	// Must not have hide (hide takes precedence)
 	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
 }
 

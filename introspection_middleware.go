@@ -9,21 +9,11 @@ import (
 )
 
 // IntrospectionFilterMiddleware is a gqlgen middleware that filters fields from introspection
-// based on directives. This works in conjunction with the SchemaFilter to provide runtime
+// based on a predicate. This works in conjunction with the SchemaFilter to provide runtime
 // introspection control for fields that are included in the schema but should be hidden.
 type IntrospectionFilterMiddleware struct {
-	Schema             *ast.Schema
-	InternalDirectives []string
-	HidePredicate      IntrospectionHidePredicate
-}
-
-// NewIntrospectionFilterMiddleware creates a middleware that hides fields with internal directives
-// from GraphQL introspection queries.
-func NewIntrospectionFilterMiddleware(schema *ast.Schema, internalDirectives []string) *IntrospectionFilterMiddleware {
-	return &IntrospectionFilterMiddleware{
-		Schema:             schema,
-		InternalDirectives: internalDirectives,
-	}
+	Schema        *ast.Schema
+	HidePredicate IntrospectionHidePredicate
 }
 
 func (IntrospectionFilterMiddleware) ExtensionName() string {
@@ -34,7 +24,7 @@ func (IntrospectionFilterMiddleware) Validate(_ graphql.ExecutableSchema) error 
 	return nil
 }
 
-// InterceptField intercepts introspection queries to hide fields marked with internal directives
+// InterceptField intercepts introspection queries to hide fields based on the predicate
 func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next graphql.Resolver) (res any, err error) {
 	res, err = next(ctx)
 	if err != nil {
@@ -52,8 +42,12 @@ func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next
 	return res, err
 }
 
-// filterTypeFields filters Query/Mutation fields to hide those with internal directives
+// filterTypeFields filters Query/Mutation fields to hide those matching the predicate
 func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, list []introspection.Field) []introspection.Field {
+	if m.HidePredicate == nil {
+		return list
+	}
+
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil || fc.Parent == nil || fc.Parent.Result == nil {
 		return list
@@ -79,22 +73,6 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 		return list
 	}
 
-	return m.filterFields(astType, list)
-}
-
-func (m *IntrospectionFilterMiddleware) shouldHideField(astField *ast.FieldDefinition) bool {
-	if m.HidePredicate != nil {
-		return m.HidePredicate(astField.Directives)
-	}
-	for _, internalDir := range m.InternalDirectives {
-		if astField.Directives.ForName(internalDir) != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *IntrospectionFilterMiddleware) filterFields(astType *ast.Definition, list []introspection.Field) []introspection.Field {
 	fList := make([]introspection.Field, 0, len(list))
 	for _, field := range list {
 		astField := astType.Fields.ForName(field.Name)
@@ -102,7 +80,7 @@ func (m *IntrospectionFilterMiddleware) filterFields(astType *ast.Definition, li
 			continue
 		}
 
-		if m.shouldHideField(astField) {
+		if m.HidePredicate(astField.Directives) {
 			continue
 		}
 
