@@ -126,7 +126,7 @@ func createMutation() *ast.Definition {
 	}
 }
 
-func TestIntrospectionFilterMiddleware_HidePredicate(t *testing.T) {
+func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 	schema := &ast.Schema{
 		Types: map[string]*ast.Definition{
 			"Query": {
@@ -162,19 +162,9 @@ func TestIntrospectionFilterMiddleware_HidePredicate(t *testing.T) {
 		},
 	}
 
-	predicate := func(directives ast.DirectiveList) bool {
-		d := directives.ForName("public")
-		if d == nil {
-			return false
-		}
-		arg := d.Arguments.ForName("listed")
-		return arg != nil && arg.Value.Raw == "false"
-	}
-
 	middleware := filter.NewSchemaFilterWithOptions(
 		schema,
 		filter.WithPublicDirective("public"),
-		filter.WithIntrospectionHidePredicate(predicate),
 	).GetIntrospectionMiddleware()
 
 	tests := []struct {
@@ -202,7 +192,7 @@ func TestIntrospectionFilterMiddleware_HidePredicate(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			astField := schema.Types["Query"].Fields.ForName(testCase.fieldName)
 			assert.NotNil(t, astField)
-			assert.Equal(t, testCase.shouldHide, middleware.HidePredicate(astField.Directives))
+			assert.Equal(t, testCase.shouldHide, middleware.IsUnlisted(astField.Directives))
 		})
 	}
 }

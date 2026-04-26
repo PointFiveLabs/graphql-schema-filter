@@ -38,20 +38,12 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 	}
 }
 
-// GetIntrospectionMiddleware returns a gqlgen middleware that hides fields from
-// GraphQL introspection based on the configured predicate.
-//
-// Usage:
-//
-//	schemaFilter := filter.NewSchemaFilterWithOptions(schema,
-//	    filter.WithPublicDirective("public"),
-//	    filter.WithIntrospectionHidePredicate(predicate),
-//	)
-//	middleware := schemaFilter.GetIntrospectionMiddleware()
+// GetIntrospectionMiddleware returns a gqlgen middleware that hides @public(listed: false)
+// fields from introspection while keeping them executable.
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
 	return &IntrospectionFilterMiddleware{
-		Schema:        fs.Schema,
-		HidePredicate: fs.options.introspectionHidePredicate,
+		Schema:           fs.Schema,
+		PublicDirectives: fs.options.publicDirectives,
 	}
 }
 

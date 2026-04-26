@@ -40,13 +40,6 @@ func main() {
         schema,
         filter.WithPublicDirective("public"),  // Fields with @public are included
         filter.WithHideDirective("hide"),      // Fields with @hide are removed entirely
-        filter.WithIntrospectionHidePredicate(func(directives ast.DirectiveList) bool {
-            // Hide @public(listed: false) fields from introspection
-            d := directives.ForName("public")
-            if d == nil { return false }
-            arg := d.Arguments.ForName("listed")
-            return arg != nil && arg.Value.Raw == "false"
-        }),
     )
 
     // Get the filtered schema
@@ -100,9 +93,8 @@ Creates a new schema filter with flexible configuration options.
 
 **Options:**
 
-- `WithPublicDirective(name string)`: Add a directive that marks fields as public (included in schema)
+- `WithPublicDirective(name string)`: Add a directive that marks fields as public (included in schema). Fields with `listed: false` argument are automatically hidden from introspection.
 - `WithHideDirective(name string)`: Add a directive that marks fields as hidden (removed from schema)
-- `WithIntrospectionHidePredicate(predicate)`: Set a custom predicate for hiding fields from introspection based on directive arguments (e.g., `@public(listed: false)`)
 - `WithBuiltInOperations(ops []string)`: Override the default built-in operations (default: ["query", "mutation"])
 
 ### `GetFilteredSchema`
@@ -119,7 +111,7 @@ Returns a new filtered GraphQL schema based on the configured directives.
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware
 ```
 
-Returns a gqlgen middleware that hides fields from GraphQL introspection queries based on the configured predicate.
+Returns a gqlgen middleware that hides `@public(listed: false)` fields from GraphQL introspection queries.
 
 **Why is this needed?**
 
@@ -137,7 +129,6 @@ schemaFilter := filter.NewSchemaFilterWithOptions(
     schema,
     filter.WithPublicDirective("public"),
     filter.WithHideDirective("hide"),
-    filter.WithIntrospectionHidePredicate(predicate),
 )
 
 c.Schema = schemaFilter.GetFilteredSchema()
@@ -150,7 +141,7 @@ server.Use(schemaFilter.GetIntrospectionMiddleware())
 **What it does:**
 
 - Intercepts `__Type.fields` introspection queries
-- For Query and Mutation types only, filters out fields matching the hide predicate
+- For Query and Mutation types only, filters out fields with `listed: false`
 - Regular types are not filtered (their `@hide` fields are already removed by the schema filter)
 
 ## Live Example

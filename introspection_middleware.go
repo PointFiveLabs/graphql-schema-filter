@@ -8,12 +8,11 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-// IntrospectionFilterMiddleware is a gqlgen middleware that filters fields from introspection
-// based on a predicate. This works in conjunction with the SchemaFilter to provide runtime
-// introspection control for fields that are included in the schema but should be hidden.
+// IntrospectionFilterMiddleware is a gqlgen middleware that hides @public(listed: false)
+// fields from introspection while keeping them executable.
 type IntrospectionFilterMiddleware struct {
-	Schema        *ast.Schema
-	HidePredicate IntrospectionHidePredicate
+	Schema           *ast.Schema
+	PublicDirectives []string
 }
 
 func (IntrospectionFilterMiddleware) ExtensionName() string {
@@ -24,7 +23,6 @@ func (IntrospectionFilterMiddleware) Validate(_ graphql.ExecutableSchema) error 
 	return nil
 }
 
-// InterceptField intercepts introspection queries to hide fields based on the predicate
 func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next graphql.Resolver) (res any, err error) {
 	res, err = next(ctx)
 	if err != nil {
@@ -42,12 +40,7 @@ func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next
 	return res, err
 }
 
-// filterTypeFields filters Query/Mutation fields to hide those matching the predicate
 func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, list []introspection.Field) []introspection.Field {
-	if m.HidePredicate == nil {
-		return list
-	}
-
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil || fc.Parent == nil || fc.Parent.Result == nil {
 		return list
@@ -59,12 +52,7 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 	}
 
 	typeName := typeResult.Name()
-	if typeName == nil {
-		return list
-	}
-
-	// Only filter Query/Mutation fields
-	if *typeName != "Query" && *typeName != "Mutation" {
+	if typeName == nil || (*typeName != "Query" && *typeName != "Mutation") {
 		return list
 	}
 
@@ -79,12 +67,25 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 		if astField == nil {
 			continue
 		}
-
-		if m.HidePredicate(astField.Directives) {
+		if m.IsUnlisted(astField.Directives) {
 			continue
 		}
-
 		fList = append(fList, field)
 	}
 	return fList
+}
+
+// IsUnlisted returns true if the field has a public directive with listed: false.
+func (m *IntrospectionFilterMiddleware) IsUnlisted(directives ast.DirectiveList) bool {
+	for _, name := range m.PublicDirectives {
+		d := directives.ForName(name)
+		if d == nil {
+			continue
+		}
+		arg := d.Arguments.ForName("listed")
+		if arg != nil && arg.Value.Raw == "false" {
+			return true
+		}
+	}
+	return false
 }
