@@ -1,5 +1,5 @@
 //go:generate echo "[Generate] Running gqlgen generate..."
-//go:generate go run github.com/99designs/gqlgen@v0.17.44 gqlgen generate -c gqlgen.yml
+//go:generate go run github.com/99designs/gqlgen@v0.17.66 generate --config gqlgen.yml
 
 package main
 
@@ -10,8 +10,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/PointFiveLabs/graphql-schema-filter"
-	"github.com/PointFiveLabs/graphql-schema-filter/example/graph"
+	"github.com/PointFiveLabs/graphql-schema-filter/v2"
+	"github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph"
 )
 
 const defaultPort = "8080"
@@ -25,10 +25,15 @@ func main() {
 	c := graph.Config{Resolvers: &graph.Resolver{}}
 
 	fullSchema := graph.NewExecutableSchema(c)
-	schemaFilter := filter.NewSchemaFilter(fullSchema.Schema(), "expose", "hide", nil)
-	c.Schema = schemaFilter.GetFilteredSchema()
+	schemaFilter := filter.NewSchemaFilterWithOptions(
+		fullSchema.Schema(),
+		filter.WithPublicDirective("public"),
+		filter.WithHideDirective("hide"),
+	)
+	c.Schema = schemaFilter.MustGetFilteredSchema()
 	schema := graph.NewExecutableSchema(c)
 	srv := handler.NewDefaultServer(schema)
+	srv.Use(schemaFilter.GetIntrospectionMiddleware())
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

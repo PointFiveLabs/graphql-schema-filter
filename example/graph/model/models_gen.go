@@ -8,7 +8,7 @@ type Mutation struct {
 type NewTodo struct {
 	Text     string `json:"text"`
 	UserID   string `json:"userId"`
-	IsGlobal bool   `json:"isGlobal"`
+	IsGlobal *bool  `json:"isGlobal,omitempty"`
 }
 
 type Query struct {
@@ -19,7 +19,7 @@ type Todo struct {
 	Text     string `json:"text"`
 	Done     bool   `json:"done"`
 	User     *User  `json:"user"`
-	IsGlobal bool   `json:"isGlobal"`
+	IsGlobal *bool  `json:"isGlobal,omitempty"`
 }
 
 type User struct {

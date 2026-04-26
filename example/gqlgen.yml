@@ -10,7 +10,7 @@ exec:
 directives:
   hide:
     skip_runtime: true
-  expose:
+  public:
     skip_runtime: true
 
 # Uncomment to enable federation
