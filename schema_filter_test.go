@@ -12,7 +12,7 @@ func TestSchemaFiltering(t *testing.T) {
 	fullSchema := getTestSchema()
 
 	schemaFilter := filter.NewSchemaFilterWithOptions(fullSchema,
-		filter.WithPublicDirective("expose"),
+		filter.WithPublicDirective("public"),
 		filter.WithHideDirective("hide"),
 	)
 	filteredSchema, err := schemaFilter.GetFilteredSchema()
@@ -108,9 +108,9 @@ func getTestSchema() *ast.Schema {
 	}
 }
 
-func exposeDirective() []*ast.Directive {
+func publicDirective() []*ast.Directive {
 	return []*ast.Directive{{
-		Name:      "expose",
+		Name:      "public",
 		Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 	}}
 }
@@ -119,7 +119,7 @@ func createQuery() *ast.Definition {
 	return &ast.Definition{
 		Name: "Query",
 		Fields: []*ast.FieldDefinition{
-			{Name: "todos", Directives: exposeDirective()},
+			{Name: "todos", Directives: publicDirective()},
 			{Name: "internalQuery"},
 		},
 	}
@@ -129,7 +129,7 @@ func createMutation() *ast.Definition {
 	return &ast.Definition{
 		Name: "Mutation",
 		Fields: []*ast.FieldDefinition{
-			{Name: "createTodo", Directives: exposeDirective(), Arguments: []*ast.ArgumentDefinition{
+			{Name: "createTodo", Directives: publicDirective(), Arguments: []*ast.ArgumentDefinition{
 				{Name: "input", Type: ast.NonNullNamedType("NewTodo", nil)},
 			}},
 			{Name: "internalMutation"},
@@ -314,7 +314,7 @@ func createTypes() map[string]*ast.Definition {
 			Name: "Query",
 			Kind: ast.Object,
 			Fields: []*ast.FieldDefinition{
-				{Name: "todos", Directives: exposeDirective()},
+				{Name: "todos", Directives: publicDirective()},
 				{Name: "internalQuery"},
 			},
 		},
@@ -323,7 +323,7 @@ func createTypes() map[string]*ast.Definition {
 			Kind: ast.Object,
 			Fields: []*ast.FieldDefinition{
 				{Name: "createTodo",
-					Directives: exposeDirective(),
+					Directives: publicDirective(),
 					Arguments:  []*ast.ArgumentDefinition{{Name: "input"}}},
 				{Name: "internalMutation"},
 			},
@@ -338,7 +338,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "user"},
 				{Name: "isGlobal", Directives: []*ast.Directive{{Name: "hide"}}},
 			},
-			Directives: exposeDirective(),
+			Directives: publicDirective(),
 		},
 		"User": {
 			Name: "User",
@@ -347,7 +347,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "id"},
 				{Name: "name"},
 			},
-			Directives: exposeDirective(),
+			Directives: publicDirective(),
 		},
 		"NewTodo": {
 			Name: "NewTodo",
@@ -357,7 +357,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "userId"},
 				{Name: "isGlobal", Directives: []*ast.Directive{{Name: "hide"}}},
 			},
-			Directives: exposeDirective(),
+			Directives: publicDirective(),
 		},
 	}
 }
