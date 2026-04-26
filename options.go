@@ -2,20 +2,20 @@ package filter
 
 // FilterOptions holds the configuration for schema filtering
 type FilterOptions struct {
-	exposeDirectives   []string // Directives that expose fields (allowlist for Query/Mutation)
-	hideDirectives     []string // Directives that hide fields (denylist for all types)
-	internalDirectives []string // Directives that expose fields but mark them as internal (hidden from introspection)
-	builtInOperations  []string // Built-in GraphQL operations (query, mutation, etc.)
+	publicDirectives  []string // Directives that include fields (allowlist for Query/Mutation)
+	hideDirectives    []string // Directives that hide fields (denylist for all types)
+	builtInOperations []string // Built-in GraphQL operations (query, mutation, etc.)
 }
 
 // Option is a function that modifies FilterOptions
 type Option func(*FilterOptions)
 
-// WithExposeDirective adds a directive name that acts as an allowlist for Query/Mutation fields.
-// Fields with this directive are visible in introspection and executable.
-func WithExposeDirective(name string) Option {
+// WithPublicDirective adds a directive name that acts as an allowlist for Query/Mutation fields.
+// Fields with this directive are included in the filtered schema and executable.
+// Fields with @<name>(listed: false) are included but hidden from introspection.
+func WithPublicDirective(name string) Option {
 	return func(o *FilterOptions) {
-		o.exposeDirectives = append(o.exposeDirectives, name)
+		o.publicDirectives = append(o.publicDirectives, name)
 	}
 }
 
@@ -24,15 +24,6 @@ func WithExposeDirective(name string) Option {
 func WithHideDirective(name string) Option {
 	return func(o *FilterOptions) {
 		o.hideDirectives = append(o.hideDirectives, name)
-	}
-}
-
-// WithInternalDirective adds a directive name that marks fields as internal.
-// Internal fields are included in the schema (executable) but should be hidden from introspection.
-// This is equivalent to having both @expose and @hide - the field exists but is not visible.
-func WithInternalDirective(name string) Option {
-	return func(o *FilterOptions) {
-		o.internalDirectives = append(o.internalDirectives, name)
 	}
 }
 

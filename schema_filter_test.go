@@ -126,6 +126,77 @@ func createMutation() *ast.Definition {
 	}
 }
 
+func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Query": {
+				Name: "Query",
+				Kind: ast.Object,
+				Fields: []*ast.FieldDefinition{
+					{
+						Name: "publicListed",
+						Directives: []*ast.Directive{{
+							Name: "public",
+							Arguments: []*ast.Argument{{
+								Name:  "listed",
+								Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue},
+							}},
+						}},
+					},
+					{
+						Name: "publicUnlisted",
+						Directives: []*ast.Directive{{
+							Name: "public",
+							Arguments: []*ast.Argument{{
+								Name:  "listed",
+								Value: &ast.Value{Raw: "false", Kind: ast.BooleanValue},
+							}},
+						}},
+					},
+					{
+						Name:       "noDirective",
+						Directives: nil,
+					},
+				},
+			},
+		},
+	}
+
+	middleware := filter.NewSchemaFilterWithOptions(
+		schema,
+		filter.WithPublicDirective("public"),
+	).GetIntrospectionMiddleware()
+
+	tests := []struct {
+		name       string
+		fieldName  string
+		shouldHide bool
+	}{
+		{
+			name:       "listed field should not be hidden",
+			fieldName:  "publicListed",
+			shouldHide: false,
+		},
+		{
+			name:       "unlisted field should be hidden",
+			fieldName:  "publicUnlisted",
+			shouldHide: true,
+		},
+		{
+			name:       "field without directive should not be hidden",
+			fieldName:  "noDirective",
+			shouldHide: false,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			astField := schema.Types["Query"].Fields.ForName(testCase.fieldName)
+			assert.NotNil(t, astField)
+			assert.Equal(t, testCase.shouldHide, middleware.IsUnlisted(astField.Directives))
+		})
+	}
+}
+
 func createTypes() map[string]*ast.Definition {
 	return map[string]*ast.Definition{
 		"Query": {
