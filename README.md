@@ -27,6 +27,8 @@ This method should exist alongside a full schema server that is intended for int
 package main
 
 import (
+    "log"
+
     "github.com/vektah/gqlparser/v2/ast"
     filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
 )
