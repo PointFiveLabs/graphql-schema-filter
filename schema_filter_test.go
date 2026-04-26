@@ -12,7 +12,7 @@ func TestSchemaFiltering(t *testing.T) {
 	fullSchema := getTestSchema()
 
 	schemaFilter := filter.NewSchemaFilterWithOptions(fullSchema,
-		filter.WithPublicDirective("public"),
+		filter.WithExposeDirective("expose"),
 		filter.WithHideDirective("hide"),
 	)
 	filteredSchema, err := schemaFilter.GetFilteredSchema()
@@ -108,9 +108,9 @@ func getTestSchema() *ast.Schema {
 	}
 }
 
-func publicDirective() []*ast.Directive {
+func exposeDirective() []*ast.Directive {
 	return []*ast.Directive{{
-		Name:      "public",
+		Name:      "expose",
 		Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 	}}
 }
@@ -119,7 +119,7 @@ func createQuery() *ast.Definition {
 	return &ast.Definition{
 		Name: "Query",
 		Fields: []*ast.FieldDefinition{
-			{Name: "todos", Directives: publicDirective()},
+			{Name: "todos", Directives: exposeDirective()},
 			{Name: "internalQuery"},
 		},
 	}
@@ -129,7 +129,7 @@ func createMutation() *ast.Definition {
 	return &ast.Definition{
 		Name: "Mutation",
 		Fields: []*ast.FieldDefinition{
-			{Name: "createTodo", Directives: publicDirective(), Arguments: []*ast.ArgumentDefinition{
+			{Name: "createTodo", Directives: exposeDirective(), Arguments: []*ast.ArgumentDefinition{
 				{Name: "input", Type: ast.NonNullNamedType("NewTodo", nil)},
 			}},
 			{Name: "internalMutation"},
@@ -145,9 +145,9 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 				Kind: ast.Object,
 				Fields: []*ast.FieldDefinition{
 					{
-						Name: "publicListed",
+						Name: "exposedListed",
 						Directives: []*ast.Directive{{
-							Name: "public",
+							Name: "expose",
 							Arguments: []*ast.Argument{{
 								Name:  "listed",
 								Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue},
@@ -155,9 +155,9 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 						}},
 					},
 					{
-						Name: "publicUnlisted",
+						Name: "exposedUnlisted",
 						Directives: []*ast.Directive{{
-							Name: "public",
+							Name: "expose",
 							Arguments: []*ast.Argument{{
 								Name:  "listed",
 								Value: &ast.Value{Raw: "false", Kind: ast.BooleanValue},
@@ -175,7 +175,7 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 
 	middleware := filter.NewSchemaFilterWithOptions(
 		schema,
-		filter.WithPublicDirective("public"),
+		filter.WithExposeDirective("expose"),
 	).GetIntrospectionMiddleware()
 
 	tests := []struct {
@@ -185,12 +185,12 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 	}{
 		{
 			name:       "listed field should not be hidden",
-			fieldName:  "publicListed",
+			fieldName:  "exposedListed",
 			shouldHide: false,
 		},
 		{
 			name:       "unlisted field should be hidden",
-			fieldName:  "publicUnlisted",
+			fieldName:  "exposedUnlisted",
 			shouldHide: true,
 		},
 		{
@@ -208,23 +208,23 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 	}
 }
 
-func TestGetFilteredSchema_RejectsPublicDirectiveWithoutListed(t *testing.T) {
+func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 	tests := []struct {
 		name        string
 		schema      *ast.Schema
 		expectedErr string
 	}{
 		{
-			name: "bare @public on Query field",
+			name: "bare @expose on Query field",
 			schema: &ast.Schema{
 				Query: &ast.Definition{
 					Name: "Query",
 					Fields: []*ast.FieldDefinition{
 						{Name: "validQuery", Directives: []*ast.Directive{{
-							Name:      "public",
+							Name:      "expose",
 							Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 						}}},
-						{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "public"}}},
+						{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "expose"}}},
 					},
 				},
 				Types: map[string]*ast.Definition{
@@ -233,45 +233,45 @@ func TestGetFilteredSchema_RejectsPublicDirectiveWithoutListed(t *testing.T) {
 						Kind: ast.Object,
 						Fields: []*ast.FieldDefinition{
 							{Name: "validQuery", Directives: []*ast.Directive{{
-								Name:      "public",
+								Name:      "expose",
 								Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 							}}},
-							{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "public"}}},
+							{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "expose"}}},
 						},
 					},
 				},
 			},
-			expectedErr: `@public directive on Query.invalidQuery is missing required argument "listed" — use @public(listed: true) or @public(listed: false)`,
+			expectedErr: `@expose directive on Query.invalidQuery is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
 		},
 		{
-			name: "bare @public on Mutation field",
+			name: "bare @expose on Mutation field",
 			schema: &ast.Schema{
 				Query:    &ast.Definition{Name: "Query"},
-				Mutation: &ast.Definition{Name: "Mutation", Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "public"}}}}},
+				Mutation: &ast.Definition{Name: "Mutation", Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "expose"}}}}},
 				Types: map[string]*ast.Definition{
-					"Mutation": {Name: "Mutation", Kind: ast.Object, Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "public"}}}}},
+					"Mutation": {Name: "Mutation", Kind: ast.Object, Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "expose"}}}}},
 				},
 			},
-			expectedErr: `@public directive on Mutation.doThing is missing required argument "listed" — use @public(listed: true) or @public(listed: false)`,
+			expectedErr: `@expose directive on Mutation.doThing is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
 		},
 		{
-			name: "bare @public on type",
+			name: "bare @expose on type",
 			schema: &ast.Schema{
 				Query: &ast.Definition{Name: "Query"},
 				Types: map[string]*ast.Definition{
-					"User": {Name: "User", Kind: ast.Object, Directives: []*ast.Directive{{Name: "public"}}},
+					"User": {Name: "User", Kind: ast.Object, Directives: []*ast.Directive{{Name: "expose"}}},
 				},
 			},
-			expectedErr: `@public directive on User is missing required argument "listed" — use @public(listed: true) or @public(listed: false)`,
+			expectedErr: `@expose directive on User is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
 		},
 		{
-			name: "valid @public(listed: true) passes",
+			name: "valid @expose(listed: true) passes",
 			schema: &ast.Schema{
 				Query: &ast.Definition{
 					Name: "Query",
 					Fields: []*ast.FieldDefinition{
 						{Name: "myQuery", Directives: []*ast.Directive{{
-							Name:      "public",
+							Name:      "expose",
 							Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 						}}},
 					},
@@ -282,7 +282,7 @@ func TestGetFilteredSchema_RejectsPublicDirectiveWithoutListed(t *testing.T) {
 						Kind: ast.Object,
 						Fields: []*ast.FieldDefinition{
 							{Name: "myQuery", Directives: []*ast.Directive{{
-								Name:      "public",
+								Name:      "expose",
 								Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 							}}},
 						},
@@ -296,7 +296,7 @@ func TestGetFilteredSchema_RejectsPublicDirectiveWithoutListed(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			schemaFilter := filter.NewSchemaFilterWithOptions(
 				testCase.schema,
-				filter.WithPublicDirective("public"),
+				filter.WithExposeDirective("expose"),
 			)
 			_, err := schemaFilter.GetFilteredSchema()
 			if testCase.expectedErr != "" {
@@ -314,7 +314,7 @@ func createTypes() map[string]*ast.Definition {
 			Name: "Query",
 			Kind: ast.Object,
 			Fields: []*ast.FieldDefinition{
-				{Name: "todos", Directives: publicDirective()},
+				{Name: "todos", Directives: exposeDirective()},
 				{Name: "internalQuery"},
 			},
 		},
@@ -323,7 +323,7 @@ func createTypes() map[string]*ast.Definition {
 			Kind: ast.Object,
 			Fields: []*ast.FieldDefinition{
 				{Name: "createTodo",
-					Directives: publicDirective(),
+					Directives: exposeDirective(),
 					Arguments:  []*ast.ArgumentDefinition{{Name: "input"}}},
 				{Name: "internalMutation"},
 			},
@@ -338,7 +338,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "user"},
 				{Name: "isGlobal", Directives: []*ast.Directive{{Name: "hide"}}},
 			},
-			Directives: publicDirective(),
+			Directives: exposeDirective(),
 		},
 		"User": {
 			Name: "User",
@@ -347,7 +347,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "id"},
 				{Name: "name"},
 			},
-			Directives: publicDirective(),
+			Directives: exposeDirective(),
 		},
 		"NewTodo": {
 			Name: "NewTodo",
@@ -357,7 +357,7 @@ func createTypes() map[string]*ast.Definition {
 				{Name: "userId"},
 				{Name: "isGlobal", Directives: []*ast.Directive{{Name: "hide"}}},
 			},
-			Directives: publicDirective(),
+			Directives: exposeDirective(),
 		},
 	}
 }

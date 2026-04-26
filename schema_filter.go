@@ -21,7 +21,7 @@ var builtInTypes = []string{"__schema", "__field", "__type", "__typekind", "__in
 //
 //	filter := NewSchemaFilterWithOptions(
 //	    schema,
-//	    WithPublicDirective("public"),
+//	    WithExposeDirective("expose"),
 //	    WithHideDirective("hide"),
 //	)
 func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSchema {
@@ -40,20 +40,20 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 	}
 }
 
-// GetIntrospectionMiddleware returns a gqlgen middleware that hides @public(listed: false)
-// fields from introspection while keeping them executable.
+// GetIntrospectionMiddleware returns a gqlgen middleware that hides fields with
+// listed: false from introspection while keeping them executable.
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
 	return &IntrospectionFilterMiddleware{
 		Schema:           fs.Schema,
-		PublicDirectives: fs.options.publicDirectives,
+		ExposeDirectives: fs.options.exposeDirectives,
 	}
 }
 
 // GetFilteredSchema returns a new filtered ast schema out of the full schema,
 // filtering out any fields, inputs, enums, types, queries & mutations that are not exposed.
-// Returns an error if any public directive is missing the required "listed" argument.
+// Returns an error if any expose directive is missing the required "listed" argument.
 func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error) {
-	if err := fs.validatePublicDirectives(); err != nil {
+	if err := fs.validateExposeDirectives(); err != nil {
 		return nil, err
 	}
 	return &ast.Schema{
@@ -68,10 +68,10 @@ func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error) {
 	}, nil
 }
 
-// validatePublicDirectives checks that all usages of public directives include the required
+// validateExposeDirectives checks that all usages of expose directives include the required
 // "listed" argument. Returns an error for the first field that violates this.
-func (fs FilteredSchema) validatePublicDirectives() error {
-	for _, name := range fs.options.publicDirectives {
+func (fs FilteredSchema) validateExposeDirectives() error {
+	for _, name := range fs.options.exposeDirectives {
 		if name == "" {
 			continue
 		}
@@ -129,7 +129,7 @@ func (fs FilteredSchema) shouldExposeFieldsByDirectives(directives ast.Directive
 }
 
 func (fs FilteredSchema) mustExposeTypesByDirectives(directives ast.DirectiveList) bool {
-	if !fs.hasAnyDirective(directives, fs.options.publicDirectives) {
+	if !fs.hasAnyDirective(directives, fs.options.exposeDirectives) {
 		return false
 	}
 

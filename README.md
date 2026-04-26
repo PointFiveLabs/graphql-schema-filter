@@ -40,11 +40,11 @@ func main() {
     // Initialize the schema filter with options
     schemaFilter := filter.NewSchemaFilterWithOptions(
         schema,
-        filter.WithPublicDirective("public"),  // Fields with @public are included
+        filter.WithExposeDirective("expose"),  // Fields with @expose are included
         filter.WithHideDirective("hide"),      // Fields with @hide are removed entirely
     )
 
-    // Get the filtered schema (validates that @public always has "listed" argument)
+    // Get the filtered schema (validates that @expose always has "listed" argument)
     filteredSchema, err := schemaFilter.GetFilteredSchema()
     if err != nil {
         log.Fatal(err)
@@ -59,9 +59,9 @@ func main() {
 
 The filtering logic works as follows:
 
-- **@public(listed: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
-- **@public(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()`.
-- **@public without listed**: Rejected with a validation error. The `listed` argument is always required.
+- **@expose(listed: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
+- **@expose(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()`.
+- **@expose without listed**: Rejected with a validation error. The `listed` argument is always required.
 - **@hide**: Fields with this directive are completely excluded from the filtered schema.
 - **Built-in Operations**: Built-in GraphQL operations such as `Query`, `Mutation` are supported by default.
 
@@ -70,16 +70,16 @@ The filtering logic works as follows:
 ```graphql
 type Query {
   # Visible in introspection, executable
-  publicQuery: String @public(listed: true)
+  publicQuery: String @expose(listed: true)
 
   # Hidden from introspection, but executable (like an unlisted phone number)
-  unlistedQuery: String @public(listed: false)
+  unlistedQuery: String @expose(listed: false)
 
   # Not in schema at all
   privateQuery: String
 }
 
-type User @public(listed: true) {
+type User @expose(listed: true) {
   id: ID!
   name: String!
   # This field is completely removed from the schema
@@ -99,7 +99,7 @@ Creates a new schema filter with flexible configuration options.
 
 **Options:**
 
-- `WithPublicDirective(name string)`: Add a directive that marks fields as public (included in schema). Fields with `listed: false` argument are automatically hidden from introspection.
+- `WithExposeDirective(name string)`: Add a directive that marks fields as exposed (included in schema). Fields with `listed: false` argument are automatically hidden from introspection.
 - `WithHideDirective(name string)`: Add a directive that marks fields as hidden (removed from schema)
 - `WithBuiltInOperations(ops []string)`: Override the default built-in operations (default: ["query", "mutation"])
 
@@ -110,7 +110,7 @@ func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error)
 ```
 
 Returns a new filtered GraphQL schema based on the configured directives.
-Returns an error if any `@public` directive is missing the required `listed` argument.
+Returns an error if any `@expose` directive is missing the required `listed` argument.
 
 ### `MustGetFilteredSchema`
 
@@ -126,11 +126,11 @@ Like `GetFilteredSchema` but panics on validation errors. Useful during server i
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware
 ```
 
-Returns a gqlgen middleware that hides `@public(listed: false)` fields from GraphQL introspection queries.
+Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries.
 
 **Why is this needed?**
 
-The schema filter operates at **build-time** by modifying the AST. It can either include a field in the schema (making it executable) or remove it entirely. However, `@public(listed: false)` fields need to be:
+The schema filter operates at **build-time** by modifying the AST. It can either include a field in the schema (making it executable) or remove it entirely. However, `@expose(listed: false)` fields need to be:
 
 - Included in the schema (so they can be executed)
 - Hidden from introspection (so they don't appear in schema queries)
@@ -142,7 +142,7 @@ This requires **runtime** filtering of introspection responses, which is what th
 ```go
 schemaFilter := filter.NewSchemaFilterWithOptions(
     schema,
-    filter.WithPublicDirective("public"),
+    filter.WithExposeDirective("expose"),
     filter.WithHideDirective("hide"),
 )
 

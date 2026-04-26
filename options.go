@@ -2,7 +2,7 @@ package filter
 
 // FilterOptions holds the configuration for schema filtering
 type FilterOptions struct {
-	publicDirectives  []string // Directives that include fields (allowlist for Query/Mutation)
+	exposeDirectives  []string // Directives that include fields (allowlist for Query/Mutation)
 	hideDirectives    []string // Directives that hide fields (denylist for all types)
 	builtInOperations []string // Built-in GraphQL operations (query, mutation, etc.)
 }
@@ -10,14 +10,14 @@ type FilterOptions struct {
 // Option is a function that modifies FilterOptions
 type Option func(*FilterOptions)
 
-// WithPublicDirective adds a directive name that acts as an allowlist for Query/Mutation fields.
+// WithExposeDirective adds a directive name that acts as an allowlist for Query/Mutation fields.
 // Fields with this directive are included in the filtered schema and executable.
 // Fields with @<name>(listed: false) are included but hidden from introspection.
 // The "listed" argument is required — GetFilteredSchema will return an error if any
 // field uses @<name> without specifying listed: true or listed: false.
-func WithPublicDirective(name string) Option {
+func WithExposeDirective(name string) Option {
 	return func(o *FilterOptions) {
-		o.publicDirectives = append(o.publicDirectives, name)
+		o.exposeDirectives = append(o.exposeDirectives, name)
 	}
 }
 
