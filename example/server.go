@@ -27,7 +27,7 @@ func main() {
 	fullSchema := graph.NewExecutableSchema(c)
 	schemaFilter := filter.NewSchemaFilterWithOptions(
 		fullSchema.Schema(),
-		filter.WithPublicDirective("public"),
+		filter.WithExposeDirective("expose"),
 		filter.WithHideDirective("hide"),
 	)
 	c.Schema = schemaFilter.MustGetFilteredSchema()

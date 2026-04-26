@@ -44,6 +44,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Expose func(ctx context.Context, obj any, next graphql.Resolver, listed bool) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -307,6 +308,34 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) dir_expose_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.dir_expose_argsListed(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["listed"] = arg0
+	return args, nil
+}
+func (ec *executionContext) dir_expose_argsListed(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	if _, ok := rawArgs["listed"]; !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("listed"))
+	if tmp, ok := rawArgs["listed"]; ok {
+		return ec.unmarshalNBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -496,8 +525,47 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, fc.Args["input"].(model.NewTodo))
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateTodo(rctx, fc.Args["input"].(model.NewTodo))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal *model.Todo
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal *model.Todo
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, nil, directive0, listed)
+		}
+		directive2 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal *model.Todo
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal *model.Todo
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, nil, directive1, listed)
+		}
+
+		tmp, err := directive2(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Todo); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.Todo`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -607,8 +675,47 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Todos(rctx)
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal []*model.Todo
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal []*model.Todo
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, nil, directive0, listed)
+		}
+		directive2 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal []*model.Todo
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal []*model.Todo
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, nil, directive1, listed)
+		}
+
+		tmp, err := directive2(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.Todo); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.Todo`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -838,8 +945,35 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.ID, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal string
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal string
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -882,8 +1016,35 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Text, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.Text, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal string
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal string
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -926,8 +1087,35 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Done, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.Done, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal bool
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal bool
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -970,8 +1158,47 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.User, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal *model.User
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal *model.User
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+		directive2 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal *model.User
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal *model.User
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive1, listed)
+		}
+
+		tmp, err := directive2(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1020,8 +1247,35 @@ func (ec *executionContext) _Todo_isGlobal(ctx context.Context, field graphql.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsGlobal, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.IsGlobal, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal *bool
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal *bool
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1061,8 +1315,35 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.ID, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal string
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal string
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1105,8 +1386,35 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.Name, nil
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				var zeroVal string
+				return zeroVal, err
+			}
+			if ec.directives.Expose == nil {
+				var zeroVal string
+				return zeroVal, errors.New("directive expose is not implemented")
+			}
+			return ec.directives.Expose(ctx, obj, directive0, listed)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3103,25 +3411,87 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 		switch k {
 		case "text":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal string
+					return zeroVal, err
+				}
+				if ec.directives.Expose == nil {
+					var zeroVal string
+					return zeroVal, errors.New("directive expose is not implemented")
+				}
+				return ec.directives.Expose(ctx, obj, directive0, listed)
 			}
-			it.Text = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.Text = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "userId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal string
+					return zeroVal, err
+				}
+				if ec.directives.Expose == nil {
+					var zeroVal string
+					return zeroVal, errors.New("directive expose is not implemented")
+				}
+				return ec.directives.Expose(ctx, obj, directive0, listed)
 			}
-			it.UserID = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(string); ok {
+				it.UserID = data
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		case "isGlobal":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isGlobal"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
+			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOBoolean2ᚖbool(ctx, v) }
+
+			directive1 := func(ctx context.Context) (any, error) {
+				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				if err != nil {
+					var zeroVal *bool
+					return zeroVal, err
+				}
+				if ec.directives.Expose == nil {
+					var zeroVal *bool
+					return zeroVal, errors.New("directive expose is not implemented")
+				}
+				return ec.directives.Expose(ctx, obj, directive0, listed)
 			}
-			it.IsGlobal = data
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*bool); ok {
+				it.IsGlobal = data
+			} else if tmp == nil {
+				it.IsGlobal = nil
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 

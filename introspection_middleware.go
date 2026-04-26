@@ -8,11 +8,11 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-// IntrospectionFilterMiddleware is a gqlgen middleware that hides @public(listed: false)
-// fields from introspection while keeping them executable.
+// IntrospectionFilterMiddleware is a gqlgen middleware that hides fields with
+// listed: false from introspection while keeping them executable.
 type IntrospectionFilterMiddleware struct {
 	Schema           *ast.Schema
-	PublicDirectives []string
+	ExposeDirectives []string
 }
 
 func (IntrospectionFilterMiddleware) ExtensionName() string {
@@ -75,9 +75,9 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 	return fList
 }
 
-// IsUnlisted returns true if the field has a public directive with listed: false.
+// IsUnlisted returns true if the field has an expose directive with listed: false.
 func (m *IntrospectionFilterMiddleware) IsUnlisted(directives ast.DirectiveList) bool {
-	for _, name := range m.PublicDirectives {
+	for _, name := range m.ExposeDirectives {
 		d := directives.ForName(name)
 		if d == nil {
 			continue
