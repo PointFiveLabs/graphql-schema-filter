@@ -14,7 +14,7 @@ This Go package allows you to filter a GraphQL schema based on custom directives
 To install the package, run:
 
 ```bash
-go get github.com/PointFiveLabs/graphql-schema-filter
+go get github.com/PointFiveLabs/graphql-schema-filter/v2
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ package main
 
 import (
     "github.com/vektah/gqlparser/v2/ast"
-    filter "github.com/PointFiveLabs/graphql-schema-filter"
+    filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
 )
 
 func main() {

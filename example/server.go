@@ -10,8 +10,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/PointFiveLabs/graphql-schema-filter"
-	"github.com/PointFiveLabs/graphql-schema-filter/example/graph"
+	"github.com/PointFiveLabs/graphql-schema-filter/v2"
+	"github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph"
 )
 
 const defaultPort = "8080"

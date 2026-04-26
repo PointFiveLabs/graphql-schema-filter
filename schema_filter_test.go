@@ -3,7 +3,7 @@ package filter_test
 import (
 	"testing"
 
-	filter "github.com/PointFiveLabs/graphql-schema-filter"
+	filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/vektah/gqlparser/v2/ast"
 )
