@@ -115,7 +115,6 @@ func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema {
 	return schema
 }
 
-// hasAnyDirective checks if any of the given directive names exist in the directive list
 func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
 	for _, name := range directiveNames {
 		if name != "" && directives.ForName(name) != nil {
@@ -125,14 +124,10 @@ func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directive
 	return false
 }
 
-// shouldExposeFieldsByDirectives checks if a field should be included in the filtered schema.
-// Returns true if the field does NOT have a hide directive.
 func (fs FilteredSchema) shouldExposeFieldsByDirectives(directives ast.DirectiveList) bool {
 	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
-// mustExposeTypesByDirectives checks if a Query/Mutation field or type must be exposed.
-// Returns true if the field/type has a @public directive, and does NOT have @hide.
 func (fs FilteredSchema) mustExposeTypesByDirectives(directives ast.DirectiveList) bool {
 	if !fs.hasAnyDirective(directives, fs.options.publicDirectives) {
 		return false

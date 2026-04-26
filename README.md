@@ -89,7 +89,7 @@ type User @public(listed: true) {
 
 ## API
 
-### `NewSchemaFilterWithOptions` (Recommended)
+### `NewSchemaFilterWithOptions`
 
 ```go
 func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSchema
