@@ -33,6 +33,7 @@ func main() {
 	c.Schema = schemaFilter.MustGetFilteredSchema()
 	schema := graph.NewExecutableSchema(c)
 	srv := handler.NewDefaultServer(schema)
+	srv.Use(schemaFilter.GetIntrospectionMiddleware())
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

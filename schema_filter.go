@@ -75,18 +75,6 @@ func (fs FilteredSchema) validatePublicDirectives() error {
 		if name == "" {
 			continue
 		}
-		// Check Query and Mutation fields
-		for _, def := range []*ast.Definition{fs.Schema.Query, fs.Schema.Mutation} {
-			if def == nil {
-				continue
-			}
-			for _, field := range def.Fields {
-				if err := fs.validateDirectiveHasListed(name, def.Name, field.Name, field.Directives); err != nil {
-					return err
-				}
-			}
-		}
-		// Check type-level directives and fields
 		for _, def := range fs.Schema.Types {
 			if err := fs.validateDirectiveHasListed(name, "", def.Name, def.Directives); err != nil {
 				return err

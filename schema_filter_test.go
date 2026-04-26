@@ -75,9 +75,9 @@ func TestSchemaFiltering(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			checkTypeAndFields(t, filteredSchema, tt.typeName, tt.shouldTypeExist, tt.fields)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			checkTypeAndFields(t, filteredSchema, testCase.typeName, testCase.shouldTypeExist, testCase.fields)
 		})
 	}
 }
@@ -248,7 +248,9 @@ func TestGetFilteredSchema_RejectsPublicDirectiveWithoutListed(t *testing.T) {
 			schema: &ast.Schema{
 				Query:    &ast.Definition{Name: "Query"},
 				Mutation: &ast.Definition{Name: "Mutation", Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "public"}}}}},
-				Types:    map[string]*ast.Definition{},
+				Types: map[string]*ast.Definition{
+					"Mutation": {Name: "Mutation", Kind: ast.Object, Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "public"}}}}},
+				},
 			},
 			expectedErr: `@public directive on Mutation.doThing is missing required argument "listed" — use @public(listed: true) or @public(listed: false)`,
 		},
