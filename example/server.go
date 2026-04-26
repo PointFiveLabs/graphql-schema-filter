@@ -1,5 +1,5 @@
 //go:generate echo "[Generate] Running gqlgen generate..."
-//go:generate go run github.com/99designs/gqlgen@v0.17.44 gqlgen generate -c gqlgen.yml
+//go:generate go run github.com/99designs/gqlgen@v0.17.66 generate --config gqlgen.yml
 
 package main
 
@@ -27,7 +27,7 @@ func main() {
 	fullSchema := graph.NewExecutableSchema(c)
 	schemaFilter := filter.NewSchemaFilterWithOptions(
 		fullSchema.Schema(),
-		filter.WithPublicDirective("expose"),
+		filter.WithPublicDirective("public"),
 		filter.WithHideDirective("hide"),
 	)
 	c.Schema = schemaFilter.MustGetFilteredSchema()

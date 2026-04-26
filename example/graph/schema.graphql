@@ -1,4 +1,4 @@
-type Todo @expose {
+type Todo @public(listed: true) {
   id: ID!
   text: String!
   done: Boolean!
@@ -6,23 +6,23 @@ type Todo @expose {
   isGlobal: Boolean @hide
 }
 
-type User @expose {
+type User @public(listed: true) {
   id: ID!
   name: String!
 }
 
-input NewTodo @expose {
+input NewTodo @public(listed: true) {
   text: String!
   userId: String!
   isGlobal: Boolean @hide
 }
 
 type Query {
-  todos: [Todo!]! @expose
+  todos: [Todo!]! @public(listed: true)
   internalQuery: Boolean!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo! @expose
+  createTodo(input: NewTodo!): Todo! @public(listed: true)
   internalMutation: Boolean!
 }
