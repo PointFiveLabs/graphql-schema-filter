@@ -141,6 +141,7 @@ Creates a new schema filter with flexible configuration options.
 - `WithExposeDirective(name string)`: Add a directive that marks fields as exposed (visible and executable)
 - `WithInternalDirective(name string)`: Add a directive that marks fields as internal (executable but hidden from introspection)
 - `WithHideDirective(name string)`: Add a directive that marks fields as hidden (removed from schema)
+- `WithIntrospectionHidePredicate(predicate)`: Set a custom predicate for hiding fields from introspection based on directive arguments (e.g., `@public(listed: false)`)
 - `WithBuiltInOperations(ops []string)`: Override the default built-in operations (default: ["query", "mutation"])
 
 ### `NewSchemaFilter` (Deprecated)

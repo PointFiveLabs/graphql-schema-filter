@@ -14,6 +14,7 @@ import (
 type IntrospectionFilterMiddleware struct {
 	Schema             *ast.Schema
 	InternalDirectives []string
+	HidePredicate      IntrospectionHidePredicate
 }
 
 // NewIntrospectionFilterMiddleware creates a middleware that hides fields with internal directives
@@ -78,6 +79,22 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 		return list
 	}
 
+	return m.filterFields(astType, list)
+}
+
+func (m *IntrospectionFilterMiddleware) shouldHideField(astField *ast.FieldDefinition) bool {
+	if m.HidePredicate != nil {
+		return m.HidePredicate(astField.Directives)
+	}
+	for _, internalDir := range m.InternalDirectives {
+		if astField.Directives.ForName(internalDir) != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *IntrospectionFilterMiddleware) filterFields(astType *ast.Definition, list []introspection.Field) []introspection.Field {
 	fList := make([]introspection.Field, 0, len(list))
 	for _, field := range list {
 		astField := astType.Fields.ForName(field.Name)
@@ -85,19 +102,11 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 			continue
 		}
 
-		// Check if field has any internal directive
-		hasInternal := false
-		for _, internalDir := range m.InternalDirectives {
-			if astField.Directives.ForName(internalDir) != nil {
-				hasInternal = true
-				break
-			}
+		if m.shouldHideField(astField) {
+			continue
 		}
 
-		// Hide fields with internal directive from introspection
-		if !hasInternal {
-			fList = append(fList, field)
-		}
+		fList = append(fList, field)
 	}
 	return fList
 }

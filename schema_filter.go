@@ -53,6 +53,7 @@ func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddl
 	return &IntrospectionFilterMiddleware{
 		Schema:             fs.Schema,
 		InternalDirectives: fs.options.internalDirectives,
+		HidePredicate:      fs.options.introspectionHidePredicate,
 	}
 }
 
