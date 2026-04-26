@@ -5,7 +5,6 @@ type FilterOptions struct {
 	publicDirectives  []string // Directives that include fields (allowlist for Query/Mutation)
 	hideDirectives    []string // Directives that hide fields (denylist for all types)
 	builtInOperations []string // Built-in GraphQL operations (query, mutation, etc.)
-	validateListed    bool     // Validate that public directives have required "listed" argument
 }
 
 // Option is a function that modifies FilterOptions
@@ -19,7 +18,6 @@ type Option func(*FilterOptions)
 func WithPublicDirective(name string) Option {
 	return func(o *FilterOptions) {
 		o.publicDirectives = append(o.publicDirectives, name)
-		o.validateListed = true
 	}
 }
 
