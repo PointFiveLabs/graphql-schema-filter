@@ -25,7 +25,11 @@ func main() {
 	c := graph.Config{Resolvers: &graph.Resolver{}}
 
 	fullSchema := graph.NewExecutableSchema(c)
-	schemaFilter := filter.NewSchemaFilter(fullSchema.Schema(), "expose", "hide", nil)
+	schemaFilter := filter.NewSchemaFilterWithOptions(
+		fullSchema.Schema(),
+		filter.WithPublicDirective("expose"),
+		filter.WithHideDirective("hide"),
+	)
 	c.Schema = schemaFilter.MustGetFilteredSchema()
 	schema := graph.NewExecutableSchema(c)
 	srv := handler.NewDefaultServer(schema)
