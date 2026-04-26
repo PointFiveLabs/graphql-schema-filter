@@ -8,6 +8,9 @@ import (
 )
 
 func (fs FilteredSchema) filterQueriesAndMutations(defs *ast.Definition) *ast.Definition {
+	if defs == nil {
+		return nil
+	}
 	collectedFields := make([]*ast.FieldDefinition, 0, len(defs.Fields))
 	for _, fd := range defs.Fields {
 		if fs.mustExposeTypesByDirectives(fd.Directives) || lo.Contains(builtInTypes, strings.ToLower(fd.Name)) {

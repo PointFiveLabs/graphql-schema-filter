@@ -42,8 +42,11 @@ func main() {
         filter.WithHideDirective("hide"),      // Fields with @hide are removed entirely
     )
 
-    // Get the filtered schema
-    filteredSchema := schemaFilter.GetFilteredSchema()
+    // Get the filtered schema (validates that @public always has "listed" argument)
+    filteredSchema, err := schemaFilter.GetFilteredSchema()
+    if err != nil {
+        log.Fatal(err)
+    }
 
     // Use the filtered schema in your GraphQL server
     // ...
@@ -54,8 +57,9 @@ func main() {
 
 The filtering logic works as follows:
 
-- **@public**: Fields with this directive are included in the filtered schema. Primarily used for Query/Mutation fields.
-- **@public(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `WithIntrospectionHidePredicate` middleware.
+- **@public(listed: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
+- **@public(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()`.
+- **@public without listed**: Rejected with a validation error. The `listed` argument is always required.
 - **@hide**: Fields with this directive are completely excluded from the filtered schema.
 - **Built-in Operations**: Built-in GraphQL operations such as `Query`, `Mutation` are supported by default.
 
@@ -100,10 +104,19 @@ Creates a new schema filter with flexible configuration options.
 ### `GetFilteredSchema`
 
 ```go
-func (fs FilteredSchema) GetFilteredSchema() *ast.Schema
+func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error)
 ```
 
 Returns a new filtered GraphQL schema based on the configured directives.
+Returns an error if any `@public` directive is missing the required `listed` argument.
+
+### `MustGetFilteredSchema`
+
+```go
+func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema
+```
+
+Like `GetFilteredSchema` but panics on validation errors. Useful during server initialization.
 
 ### `GetIntrospectionMiddleware`
 
@@ -131,7 +144,7 @@ schemaFilter := filter.NewSchemaFilterWithOptions(
     filter.WithHideDirective("hide"),
 )
 
-c.Schema = schemaFilter.GetFilteredSchema()
+c.Schema = schemaFilter.MustGetFilteredSchema()
 executableSchema := generated.NewExecutableSchema(c)
 
 server := handler.NewDefaultServer(executableSchema)

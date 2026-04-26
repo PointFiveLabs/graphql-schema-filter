@@ -1,6 +1,8 @@
 package filter
 
 import (
+	"fmt"
+
 	"github.com/samber/lo"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -49,11 +51,15 @@ func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddl
 
 // NewSchemaFilter creates a new schema filter using the legacy API.
 // Deprecated: Use NewSchemaFilterWithOptions instead for more flexibility.
+// Note: Unlike WithPublicDirective, this does not validate the "listed" argument.
 func NewSchemaFilter(schema *ast.Schema, publicDirective, hideDirective string, overrideBuiltInOperations *[]string) *FilteredSchema {
 	opts := []Option{}
 
 	if publicDirective != "" {
-		opts = append(opts, WithPublicDirective(publicDirective))
+		// Use a raw option that doesn't enable listed validation (legacy API)
+		opts = append(opts, func(o *FilterOptions) {
+			o.publicDirectives = append(o.publicDirectives, publicDirective)
+		})
 	}
 	if hideDirective != "" {
 		opts = append(opts, WithHideDirective(hideDirective))
@@ -67,7 +73,11 @@ func NewSchemaFilter(schema *ast.Schema, publicDirective, hideDirective string, 
 
 // GetFilteredSchema returns a new filtered ast schema out of the full schema,
 // filtering out any fields, inputs, enums, types, queries & mutations that are not exposed.
-func (fs FilteredSchema) GetFilteredSchema() *ast.Schema {
+// Returns an error if any public directive is missing the required "listed" argument.
+func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error) {
+	if err := fs.validatePublicDirectives(); err != nil {
+		return nil, err
+	}
 	return &ast.Schema{
 		// Filtering directives completely from the schema will make them unusable.
 		// You should filter them from the Introspection Query instead.
@@ -77,7 +87,70 @@ func (fs FilteredSchema) GetFilteredSchema() *ast.Schema {
 		Mutation:      fs.filterQueriesAndMutations(fs.Schema.Mutation),
 		PossibleTypes: fs.filterImplementsAndPossibleTypes(fs.Schema.PossibleTypes),
 		Implements:    fs.filterImplementsAndPossibleTypes(fs.Schema.Implements),
+	}, nil
+}
+
+// validatePublicDirectives checks that all usages of public directives include the required
+// "listed" argument. Returns an error for the first field that violates this.
+// Only runs when WithPublicDirective was used (not for legacy NewSchemaFilter).
+func (fs FilteredSchema) validatePublicDirectives() error {
+	if !fs.options.validateListed {
+		return nil
 	}
+	for _, name := range fs.options.publicDirectives {
+		if name == "" {
+			continue
+		}
+		// Check Query and Mutation fields
+		for _, def := range []*ast.Definition{fs.Schema.Query, fs.Schema.Mutation} {
+			if def == nil {
+				continue
+			}
+			for _, field := range def.Fields {
+				if err := fs.validateDirectiveHasListed(name, def.Name, field.Name, field.Directives); err != nil {
+					return err
+				}
+			}
+		}
+		// Check type-level directives and fields
+		for _, def := range fs.Schema.Types {
+			if err := fs.validateDirectiveHasListed(name, "", def.Name, def.Directives); err != nil {
+				return err
+			}
+			for _, field := range def.Fields {
+				if err := fs.validateDirectiveHasListed(name, def.Name, field.Name, field.Directives); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (fs FilteredSchema) validateDirectiveHasListed(directiveName, typeName, fieldName string, directives ast.DirectiveList) error {
+	d := directives.ForName(directiveName)
+	if d == nil {
+		return nil
+	}
+	if d.Arguments.ForName("listed") == nil {
+		location := fieldName
+		if typeName != "" {
+			location = fmt.Sprintf("%s.%s", typeName, fieldName)
+		}
+		return fmt.Errorf("@%s directive on %s is missing required argument \"listed\" — use @%s(listed: true) or @%s(listed: false)",
+			directiveName, location, directiveName, directiveName)
+	}
+	return nil
+}
+
+// MustGetFilteredSchema is like GetFilteredSchema but panics on validation errors.
+// Useful during server initialization where invalid schema should prevent startup.
+func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema {
+	schema, err := fs.GetFilteredSchema()
+	if err != nil {
+		panic(fmt.Sprintf("schema filter validation failed: %v", err))
+	}
+	return schema
 }
 
 // hasAnyDirective checks if any of the given directive names exist in the directive list

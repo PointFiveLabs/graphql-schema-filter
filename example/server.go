@@ -26,7 +26,7 @@ func main() {
 
 	fullSchema := graph.NewExecutableSchema(c)
 	schemaFilter := filter.NewSchemaFilter(fullSchema.Schema(), "expose", "hide", nil)
-	c.Schema = schemaFilter.GetFilteredSchema()
+	c.Schema = schemaFilter.MustGetFilteredSchema()
 	schema := graph.NewExecutableSchema(c)
 	srv := handler.NewDefaultServer(schema)
 
