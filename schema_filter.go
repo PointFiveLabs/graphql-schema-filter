@@ -133,29 +133,16 @@ func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema {
 	return schema
 }
 
-func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
-	return hasAnyDirective(directives, directiveNames)
-}
-
-func hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
-	for _, name := range directiveNames {
-		if name != "" && directives.ForName(name) != nil {
-			return true
-		}
-	}
-	return false
-}
-
 func (fs FilteredSchema) shouldExposeFieldsByDirectives(directives ast.DirectiveList) bool {
-	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
+	return !hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
 func (fs FilteredSchema) mustExposeTypesByDirectives(directives ast.DirectiveList) bool {
-	if !fs.hasAnyDirective(directives, fs.options.exposeDirectives) {
+	if !hasAnyDirective(directives, fs.options.exposeDirectives) {
 		return false
 	}
 
-	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
+	return !hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
 func (fs FilteredSchema) filterDefinitionArguments(args []*ast.ArgumentDefinition) []*ast.ArgumentDefinition {

@@ -115,27 +115,16 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 	}
 
 	isRootType := *typeName == "Query" || *typeName == "Mutation"
-	filtered := make([]introspection.Field, 0, len(fields))
-	for _, field := range fields {
-		astField := astType.Fields.ForName(field.Name)
-		if astField == nil {
-			continue
-		}
-		if isRootType {
-			if !hasAnyDirective(astField.Directives, m.options.exposeDirectives) {
-				continue
-			}
-			if isUnlisted(astField.Directives, m.options.exposeDirectives) {
-				continue
-			}
-			filtered = append(filtered, field)
-		} else {
-			if !hasAnyDirective(astField.Directives, m.options.hideDirectives) {
-				filtered = append(filtered, field)
-			}
-		}
+	if isRootType {
+		return filterFieldList(fields, astType, func(astField *ast.FieldDefinition) bool {
+			return hasAnyDirective(astField.Directives, m.options.exposeDirectives) &&
+				!isUnlisted(astField.Directives, m.options.exposeDirectives)
+		}), nil
 	}
-	return filtered, nil
+
+	return filterFieldList(fields, astType, func(astField *ast.FieldDefinition) bool {
+		return !hasAnyDirective(astField.Directives, m.options.hideDirectives)
+	}), nil
 }
 
 func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.FieldContext, res any) (any, error) {

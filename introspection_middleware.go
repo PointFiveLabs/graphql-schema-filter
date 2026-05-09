@@ -10,6 +10,10 @@ import (
 
 // IntrospectionFilterMiddleware is a gqlgen middleware that hides fields with
 // listed: false from introspection while keeping them executable.
+// This is a companion to GetFilteredSchema() for the build-time filtering model.
+//
+// For runtime filtering, use RuntimeFilterMiddleware instead — it handles
+// introspection filtering as well as execution blocking.
 type IntrospectionFilterMiddleware struct {
 	Schema           *ast.Schema
 	ExposeDirectives []string
@@ -40,17 +44,6 @@ func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next
 	return res, err
 }
 
-func getParentTypeName(fc *graphql.FieldContext) *string {
-	if fc.Parent == nil || fc.Parent.Result == nil {
-		return nil
-	}
-	typeResult, ok := fc.Parent.Result.(*introspection.Type)
-	if !ok || typeResult == nil {
-		return nil
-	}
-	return typeResult.Name()
-}
-
 func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, list []introspection.Field) []introspection.Field {
 	fc := graphql.GetFieldContext(ctx)
 	typeName := getParentTypeName(fc)
@@ -63,35 +56,12 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 		return list
 	}
 
-	fList := make([]introspection.Field, 0, len(list))
-	for _, field := range list {
-		astField := astType.Fields.ForName(field.Name)
-		if astField == nil {
-			continue
-		}
-		if m.IsUnlisted(astField.Directives) {
-			continue
-		}
-		fList = append(fList, field)
-	}
-	return fList
+	return filterFieldList(list, astType, func(astField *ast.FieldDefinition) bool {
+		return !isUnlisted(astField.Directives, m.ExposeDirectives)
+	})
 }
 
 // IsUnlisted returns true if the field has an expose directive with listed: false.
 func (m *IntrospectionFilterMiddleware) IsUnlisted(directives ast.DirectiveList) bool {
 	return isUnlisted(directives, m.ExposeDirectives)
-}
-
-func isUnlisted(directives ast.DirectiveList, exposeDirectives []string) bool {
-	for _, name := range exposeDirectives {
-		d := directives.ForName(name)
-		if d == nil {
-			continue
-		}
-		arg := d.Arguments.ForName("listed")
-		if arg != nil && arg.Value.Raw == "false" {
-			return true
-		}
-	}
-	return false
 }
