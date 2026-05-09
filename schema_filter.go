@@ -134,6 +134,10 @@ func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema {
 }
 
 func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
+	return hasAnyDirective(directives, directiveNames)
+}
+
+func hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
 	for _, name := range directiveNames {
 		if name != "" && directives.ForName(name) != nil {
 			return true

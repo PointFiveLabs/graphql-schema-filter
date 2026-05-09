@@ -40,18 +40,20 @@ func (m *IntrospectionFilterMiddleware) InterceptField(ctx context.Context, next
 	return res, err
 }
 
-func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, list []introspection.Field) []introspection.Field {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil || fc.Parent == nil || fc.Parent.Result == nil {
-		return list
+func getParentTypeName(fc *graphql.FieldContext) *string {
+	if fc.Parent == nil || fc.Parent.Result == nil {
+		return nil
 	}
-
 	typeResult, ok := fc.Parent.Result.(*introspection.Type)
 	if !ok || typeResult == nil {
-		return list
+		return nil
 	}
+	return typeResult.Name()
+}
 
-	typeName := typeResult.Name()
+func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, list []introspection.Field) []introspection.Field {
+	fc := graphql.GetFieldContext(ctx)
+	typeName := getParentTypeName(fc)
 	if typeName == nil || (*typeName != "Query" && *typeName != "Mutation") {
 		return list
 	}
@@ -77,7 +79,11 @@ func (m *IntrospectionFilterMiddleware) filterTypeFields(ctx context.Context, li
 
 // IsUnlisted returns true if the field has an expose directive with listed: false.
 func (m *IntrospectionFilterMiddleware) IsUnlisted(directives ast.DirectiveList) bool {
-	for _, name := range m.ExposeDirectives {
+	return isUnlisted(directives, m.ExposeDirectives)
+}
+
+func isUnlisted(directives ast.DirectiveList, exposeDirectives []string) bool {
+	for _, name := range exposeDirectives {
 		d := directives.ForName(name)
 		if d == nil {
 			continue

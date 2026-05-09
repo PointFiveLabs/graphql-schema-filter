@@ -70,11 +70,11 @@ func (m *RuntimeFilterMiddleware) interceptExecution(ctx context.Context, fc *gr
 	}
 
 	if isRootType {
-		if !m.hasAnyDirective(astField.Directives, m.options.exposeDirectives) {
+		if !hasAnyDirective(astField.Directives, m.options.exposeDirectives) {
 			return nil, fmt.Errorf("field '%s' is not accessible", fc.Field.Name)
 		}
 	} else {
-		if m.hasAnyDirective(astField.Directives, m.options.hideDirectives) {
+		if hasAnyDirective(astField.Directives, m.options.hideDirectives) {
 			return nil, fmt.Errorf("field '%s' is not accessible", fc.Field.Name)
 		}
 	}
@@ -99,7 +99,7 @@ func (m *RuntimeFilterMiddleware) interceptIntrospection(ctx context.Context, fc
 }
 
 func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldContext, res any) (any, error) {
-	typeName := m.getParentTypeName(fc)
+	typeName := getParentTypeName(fc)
 	if typeName == nil {
 		return res, nil
 	}
@@ -122,15 +122,15 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 			continue
 		}
 		if isRootType {
-			if !m.hasAnyDirective(astField.Directives, m.options.exposeDirectives) {
+			if !hasAnyDirective(astField.Directives, m.options.exposeDirectives) {
 				continue
 			}
-			if m.isUnlisted(astField.Directives) {
+			if isUnlisted(astField.Directives, m.options.exposeDirectives) {
 				continue
 			}
 			filtered = append(filtered, field)
 		} else {
-			if !m.hasAnyDirective(astField.Directives, m.options.hideDirectives) {
+			if !hasAnyDirective(astField.Directives, m.options.hideDirectives) {
 				filtered = append(filtered, field)
 			}
 		}
@@ -139,7 +139,7 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 }
 
 func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.FieldContext, res any) (any, error) {
-	typeName := m.getParentTypeName(fc)
+	typeName := getParentTypeName(fc)
 	if typeName == nil {
 		return res, nil
 	}
@@ -160,43 +160,9 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.Fiel
 		if astEnumValue == nil {
 			continue
 		}
-		if !m.hasAnyDirective(astEnumValue.Directives, m.options.hideDirectives) {
+		if !hasAnyDirective(astEnumValue.Directives, m.options.hideDirectives) {
 			filtered = append(filtered, enumValue)
 		}
 	}
 	return filtered, nil
-}
-
-func (m *RuntimeFilterMiddleware) getParentTypeName(fc *graphql.FieldContext) *string {
-	if fc.Parent == nil || fc.Parent.Result == nil {
-		return nil
-	}
-	typeResult, ok := fc.Parent.Result.(*introspection.Type)
-	if !ok || typeResult == nil {
-		return nil
-	}
-	return typeResult.Name()
-}
-
-func (m *RuntimeFilterMiddleware) hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
-	for _, name := range directiveNames {
-		if name != "" && directives.ForName(name) != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *RuntimeFilterMiddleware) isUnlisted(directives ast.DirectiveList) bool {
-	for _, name := range m.options.exposeDirectives {
-		d := directives.ForName(name)
-		if d == nil {
-			continue
-		}
-		arg := d.Arguments.ForName("listed")
-		if arg != nil && arg.Value.Raw == "false" {
-			return true
-		}
-	}
-	return false
 }
