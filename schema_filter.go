@@ -40,6 +40,24 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 	}
 }
 
+// GetRuntimeFilterMiddleware returns a gqlgen middleware that enforces schema
+// filtering at runtime on a per-request basis. This enables a unified server
+// where the same schema serves both internal and external clients, with the
+// caller controlling when the middleware is active.
+//
+// The middleware applies the same expose/hide directive rules as GetFilteredSchema,
+// but at request time instead of build time. It handles both execution blocking
+// (preventing access to non-exposed fields) and introspection filtering (hiding
+// fields from schema queries).
+//
+// See RuntimeFilterMiddleware for the full list of filtering rules.
+func (fs *FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
+	return &RuntimeFilterMiddleware{
+		Schema:  fs.Schema,
+		options: fs.options,
+	}
+}
+
 // GetIntrospectionMiddleware returns a gqlgen middleware that hides fields with
 // listed: false from introspection while keeping them executable.
 func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
