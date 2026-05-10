@@ -8,12 +8,8 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-// DirectiveFilterMiddleware is a gqlgen middleware that filters which directives
-// appear in __schema { directives } introspection responses.
-// The filter function determines which directives to include (return true to include).
-//
-// Use this to hide internal directives (like @expose, @hide, @role) from external
-// API users while keeping standard directives (@deprecated, @skip) visible.
+// DirectiveFilterMiddleware filters which directives appear in __schema { directives }
+// introspection responses. The filter function returns true for directives to include.
 type DirectiveFilterMiddleware struct {
 	schema          *ast.Schema
 	directiveFilter func(name string) bool

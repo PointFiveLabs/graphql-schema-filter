@@ -10,20 +10,8 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-// RuntimeFilterMiddleware is a gqlgen middleware that enforces schema filtering
-// at runtime on a per-request basis. Unlike GetFilteredSchema() which creates a
-// separate filtered schema at build time, this middleware operates on the full
-// schema and applies filtering rules during request execution.
-//
-// This enables a unified server architecture where the same server can serve
-// both internal clients (full schema) and external clients (filtered schema),
-// with the filtering decision made per-request by the caller.
-//
-// The middleware handles both execution blocking and introspection filtering:
-//   - Query/Mutation fields without an expose directive are blocked and hidden
-//   - Fields with @expose(listed: false) are executable but hidden from introspection
-//   - Fields with a hide directive on any type are blocked and hidden
-//   - Enum values with a hide directive are hidden from introspection
+// RuntimeFilterMiddleware filters fields at request time based on expose/hide directives.
+// Blocks execution of non-exposed fields and hides them from introspection.
 type RuntimeFilterMiddleware struct {
 	schema  *ast.Schema
 	options FilterOptions

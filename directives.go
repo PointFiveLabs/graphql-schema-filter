@@ -41,8 +41,6 @@ func getParentTypeName(fc *graphql.FieldContext) *string {
 	return typeResult.Name()
 }
 
-// filterFieldList filters an introspection field list using the AST definition
-// to look up each field, keeping only those where shouldInclude returns true.
 func filterFieldList(fields []introspection.Field, astType *ast.Definition, shouldInclude func(*ast.FieldDefinition) bool) []introspection.Field {
 	filtered := make([]introspection.Field, 0, len(fields))
 	for _, field := range fields {
