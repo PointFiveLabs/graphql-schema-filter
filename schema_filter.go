@@ -40,12 +40,32 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 	}
 }
 
-// GetIntrospectionMiddleware returns a gqlgen middleware that hides fields with
-// listed: false from introspection while keeping them executable.
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
-	return &IntrospectionFilterMiddleware{
-		Schema:           fs.Schema,
-		ExposeDirectives: fs.options.exposeDirectives,
+// GetRuntimeFilterMiddleware returns a middleware that applies expose/hide
+// directive rules per-request. See RuntimeFilterMiddleware.
+func (fs FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
+	return &RuntimeFilterMiddleware{
+		schema:  fs.Schema,
+		options: fs.options,
+	}
+}
+
+// GetIntrospectionMiddleware returns a middleware that hides @expose(listed: false)
+// fields from introspection. Companion to GetFilteredSchema for build-time filtering.
+func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
+	return &RuntimeFilterMiddleware{
+		schema: fs.Schema,
+		options: FilterOptions{
+			exposeDirectives: fs.options.exposeDirectives,
+		},
+	}
+}
+
+// GetDirectiveFilterMiddleware returns a gqlgen middleware that filters which
+// directives appear in __schema { directives } introspection responses.
+// The filter function determines which directives to include (return true to include).
+func (fs FilteredSchema) GetDirectiveFilterMiddleware(directiveFilter func(name string) bool) *DirectiveFilterMiddleware {
+	return &DirectiveFilterMiddleware{
+		directiveFilter: directiveFilter,
 	}
 }
 
@@ -115,25 +135,16 @@ func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema {
 	return schema
 }
 
-func (fs FilteredSchema) hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool {
-	for _, name := range directiveNames {
-		if name != "" && directives.ForName(name) != nil {
-			return true
-		}
-	}
-	return false
-}
-
 func (fs FilteredSchema) shouldExposeFieldsByDirectives(directives ast.DirectiveList) bool {
-	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
+	return !hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
 func (fs FilteredSchema) mustExposeTypesByDirectives(directives ast.DirectiveList) bool {
-	if !fs.hasAnyDirective(directives, fs.options.exposeDirectives) {
+	if !hasAnyDirective(directives, fs.options.exposeDirectives) {
 		return false
 	}
 
-	return !fs.hasAnyDirective(directives, fs.options.hideDirectives)
+	return !hasAnyDirective(directives, fs.options.hideDirectives)
 }
 
 func (fs FilteredSchema) filterDefinitionArguments(args []*ast.ArgumentDefinition) []*ast.ArgumentDefinition {

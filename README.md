@@ -8,6 +8,7 @@ This Go package allows you to filter a GraphQL schema based on custom directives
 - **Schema Filtering**: Remove or include specific types, fields, inputs, enums, queries, and mutations based on directives.
 - **Custom Directives**: Control the visibility of schema elements using custom directives.
 - **Introspection Support**: The introspection query should work correctly with the filtered schema.
+- **Build-time and Runtime Filtering**: Choose between modifying the schema at startup (two-server model) or filtering per-request at runtime (unified server model).
 
 ## Installation
 
@@ -19,9 +20,9 @@ go get github.com/PointFiveLabs/graphql-schema-filter/v2
 
 ## Usage
 
-This method should exist alongside a full schema server that is intended for internal usages. This ensures that the internal server has access to the complete schema, while the filtered schema is exposed to external clients.
+### Build-time Filtering (Two-Server Model)
 
-### Example
+This approach creates a separate filtered schema at startup. Use this when you have dedicated internal and public API servers.
 
 ```go
 package main
@@ -55,12 +56,35 @@ func main() {
 }
 ```
 
+### Runtime Filtering (Unified Server Model)
+
+This approach keeps the full schema and applies filtering rules per-request via middleware. Use this when a single server serves both internal and external clients, and the filtering decision is made at request time (e.g., based on authentication method).
+
+```go
+schemaFilter := filter.NewSchemaFilterWithOptions(
+    schema,
+    filter.WithExposeDirective("expose"),
+    filter.WithHideDirective("hide"),
+)
+
+executableSchema := generated.NewExecutableSchema(c)
+server := handler.NewDefaultServer(executableSchema)
+
+// Get the runtime filter middleware
+runtimeFilter := schemaFilter.GetRuntimeFilterMiddleware()
+
+// Wrap it so it only activates for certain requests (e.g., API key auth)
+server.Use(myAuthAwareWrapper(runtimeFilter))
+```
+
+The runtime filter applies the same directive rules as build-time filtering but without modifying the schema. The caller controls when the middleware is active — for example, activating it only for API key requests while letting JWT-authenticated users access the full schema.
+
 ### Filtering Logic
 
 The filtering logic works as follows:
 
 - **@expose(listed: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
-- **@expose(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()`.
+- **@expose(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()` or `GetRuntimeFilterMiddleware()`.
 - **@expose without listed**: Rejected with a validation error. The `listed` argument is always required.
 - **@hide**: Fields with this directive are completely excluded from the filtered schema.
 - **Built-in Operations**: Built-in GraphQL operations such as `Query`, `Mutation` are supported by default.
@@ -120,22 +144,59 @@ func (fs FilteredSchema) MustGetFilteredSchema() *ast.Schema
 
 Like `GetFilteredSchema` but panics on validation errors. Useful during server initialization.
 
+### `GetRuntimeFilterMiddleware`
+
+```go
+func (fs FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware
+```
+
+Returns a gqlgen middleware that enforces schema filtering at runtime on a per-request basis.
+
+**Execution blocking:**
+
+- Query/Mutation fields without `@expose` are rejected with an error
+- Fields with `@hide` on any type are rejected
+
+**Introspection filtering:**
+
+- `__Type.fields` — non-exposed Query/Mutation fields hidden; `@expose(listed: false)` fields hidden; `@hide` fields on nested types hidden
+- `__Type.inputFields` — `@hide` input object fields hidden
+- `__Type.enumValues` — `@hide` enum values hidden
+- `__Type.interfaces` / `__Type.possibleTypes` — non-exposed types hidden
+- `__Schema.types` — non-exposed and `@hide` types hidden from the type list
+
+**Usage with gqlgen:**
+
+```go
+schemaFilter := filter.NewSchemaFilterWithOptions(
+    schema,
+    filter.WithExposeDirective("public"),
+    filter.WithHideDirective("hide"),
+)
+
+executableSchema := generated.NewExecutableSchema(c)
+server := handler.New(executableSchema)
+server.Use(schemaFilter.GetRuntimeFilterMiddleware())
+```
+
+**When to use this vs `GetFilteredSchema`:**
+
+| | `GetFilteredSchema` | `GetRuntimeFilterMiddleware` |
+|---|---|---|
+| **When filtering happens** | At startup (build-time) | Per-request (runtime) |
+| **Schema modification** | Creates a new, smaller schema | Full schema unchanged |
+| **Use case** | Dedicated public API server | Unified server with mixed auth |
+| **Filtering decision** | Fixed at server start | Dynamic, per-request |
+
 ### `GetIntrospectionMiddleware`
 
 ```go
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware
+func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware
 ```
 
-Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries.
+Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries. This is a companion to `GetFilteredSchema()` — use it when you need build-time schema filtering with runtime introspection hiding for unlisted fields.
 
-**Why is this needed?**
-
-The schema filter operates at **build-time** by modifying the AST. It can either include a field in the schema (making it executable) or remove it entirely. However, `@expose(listed: false)` fields need to be:
-
-- Included in the schema (so they can be executed)
-- Hidden from introspection (so they don't appear in schema queries)
-
-This requires **runtime** filtering of introspection responses, which is what this middleware provides.
+> **Note:** If you are using `GetRuntimeFilterMiddleware()`, you do not need this middleware — the runtime filter already handles `@expose(listed: false)` introspection filtering.
 
 **Usage with gqlgen:**
 
