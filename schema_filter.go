@@ -51,7 +51,7 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 // fields from schema queries).
 //
 // See RuntimeFilterMiddleware for the full list of filtering rules.
-func (fs *FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
+func (fs FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
 	return &RuntimeFilterMiddleware{
 		schema:  fs.Schema,
 		options: fs.options,
@@ -64,12 +64,22 @@ func (fs *FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware 
 //
 // For runtime filtering, use GetRuntimeFilterMiddleware instead — it handles
 // introspection filtering as well as execution blocking.
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
+func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
 	return &RuntimeFilterMiddleware{
 		schema: fs.Schema,
 		options: FilterOptions{
 			exposeDirectives: fs.options.exposeDirectives,
 		},
+	}
+}
+
+// GetDirectiveFilterMiddleware returns a gqlgen middleware that filters which
+// directives appear in __schema { directives } introspection responses.
+// The filter function determines which directives to include (return true to include).
+func (fs FilteredSchema) GetDirectiveFilterMiddleware(directiveFilter func(name string) bool) *DirectiveFilterMiddleware {
+	return &DirectiveFilterMiddleware{
+		schema:          fs.Schema,
+		directiveFilter: directiveFilter,
 	}
 }
 
