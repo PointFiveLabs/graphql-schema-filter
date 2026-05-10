@@ -53,17 +53,23 @@ func NewSchemaFilterWithOptions(schema *ast.Schema, opts ...Option) *FilteredSch
 // See RuntimeFilterMiddleware for the full list of filtering rules.
 func (fs *FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
 	return &RuntimeFilterMiddleware{
-		Schema:  fs.Schema,
+		schema:  fs.Schema,
 		options: fs.options,
 	}
 }
 
 // GetIntrospectionMiddleware returns a gqlgen middleware that hides fields with
 // listed: false from introspection while keeping them executable.
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware {
-	return &IntrospectionFilterMiddleware{
-		Schema:           fs.Schema,
-		ExposeDirectives: fs.options.exposeDirectives,
+// This is a companion to GetFilteredSchema() for the build-time filtering model.
+//
+// For runtime filtering, use GetRuntimeFilterMiddleware instead — it handles
+// introspection filtering as well as execution blocking.
+func (fs *FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
+	return &RuntimeFilterMiddleware{
+		schema: fs.Schema,
+		options: FilterOptions{
+			exposeDirectives: fs.options.exposeDirectives,
+		},
 	}
 }
 

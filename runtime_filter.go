@@ -3,6 +3,7 @@ package filter
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -24,7 +25,7 @@ import (
 //   - Fields with a hide directive on any type are blocked and hidden
 //   - Enum values with a hide directive are hidden from introspection
 type RuntimeFilterMiddleware struct {
-	Schema  *ast.Schema
+	schema  *ast.Schema
 	options FilterOptions
 }
 
@@ -50,7 +51,7 @@ func (m *RuntimeFilterMiddleware) InterceptField(ctx context.Context, next graph
 }
 
 func (m *RuntimeFilterMiddleware) interceptExecution(ctx context.Context, fc *graphql.FieldContext, next graphql.Resolver) (any, error) {
-	if len(fc.Field.Name) > 0 && fc.Field.Name[0] == '_' {
+	if strings.HasPrefix(fc.Field.Name, "__") {
 		return next(ctx)
 	}
 
@@ -59,7 +60,7 @@ func (m *RuntimeFilterMiddleware) interceptExecution(ctx context.Context, fc *gr
 		return next(ctx)
 	}
 
-	astType := m.Schema.Types[fc.Object]
+	astType := m.schema.Types[fc.Object]
 	if astType == nil {
 		return next(ctx)
 	}
@@ -104,7 +105,7 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 		return res, nil
 	}
 
-	astType := m.Schema.Types[*typeName]
+	astType := m.schema.Types[*typeName]
 	if astType == nil {
 		return res, nil
 	}
@@ -118,7 +119,7 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 	if isRootType {
 		return filterFieldList(fields, astType, func(astField *ast.FieldDefinition) bool {
 			return hasAnyDirective(astField.Directives, m.options.exposeDirectives) &&
-				!isUnlisted(astField.Directives, m.options.exposeDirectives)
+				!IsUnlisted(astField.Directives, m.options.exposeDirectives)
 		}), nil
 	}
 
@@ -133,7 +134,7 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.Fiel
 		return res, nil
 	}
 
-	astType := m.Schema.Types[*typeName]
+	astType := m.schema.Types[*typeName]
 	if astType == nil || astType.Kind != ast.Enum {
 		return res, nil
 	}

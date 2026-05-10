@@ -295,3 +295,82 @@ func TestRuntimeFilter_UnknownTypePassesThrough(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "ok", result)
 }
+
+func TestRuntimeFilter_NoHideDirectives(t *testing.T) {
+	schema := &ast.Schema{
+		Types: map[string]*ast.Definition{
+			"Query": {
+				Name: "Query",
+				Kind: ast.Object,
+				Fields: ast.FieldList{
+					{Name: "publicQuery", Directives: exposeDirective()},
+					{Name: "internalQuery"},
+				},
+			},
+			"User": {
+				Name: "User",
+				Kind: ast.Object,
+				Fields: ast.FieldList{
+					{Name: "id"},
+					{Name: "name"},
+					{Name: "internalData", Directives: []*ast.Directive{{Name: "hide"}}},
+				},
+			},
+		},
+	}
+
+	middleware := filter.NewSchemaFilterWithOptions(
+		schema,
+		filter.WithExposeDirective("expose"),
+	).GetRuntimeFilterMiddleware()
+
+	next := func(ctx context.Context) (any, error) {
+		return "ok", nil
+	}
+
+	testCases := []struct {
+		name        string
+		object      string
+		fieldName   string
+		expectError bool
+	}{
+		{
+			name:        "exposed root field is allowed",
+			object:      "Query",
+			fieldName:   "publicQuery",
+			expectError: false,
+		},
+		{
+			name:        "non-exposed root field is blocked",
+			object:      "Query",
+			fieldName:   "internalQuery",
+			expectError: true,
+		},
+		{
+			name:        "nested type field passes through without hide directives",
+			object:      "User",
+			fieldName:   "name",
+			expectError: false,
+		},
+		{
+			name:        "nested type @hide field passes through when no hide directives configured",
+			object:      "User",
+			fieldName:   "internalData",
+			expectError: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := withFieldCtx(context.Background(), testCase.object, testCase.fieldName)
+			result, err := middleware.InterceptField(ctx, next)
+			if testCase.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "is not accessible")
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, "ok", result)
+			}
+		})
+	}
+}

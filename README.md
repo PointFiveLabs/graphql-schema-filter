@@ -183,7 +183,7 @@ server.Use(schemaFilter.GetRuntimeFilterMiddleware())
 ### `GetIntrospectionMiddleware`
 
 ```go
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *IntrospectionFilterMiddleware
+func (fs *FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware
 ```
 
 Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries. This is a companion to `GetFilteredSchema()` — use it when you need build-time schema filtering with runtime introspection hiding for unlisted fields.

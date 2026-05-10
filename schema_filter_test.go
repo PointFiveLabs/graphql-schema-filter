@@ -108,13 +108,6 @@ func getTestSchema() *ast.Schema {
 	}
 }
 
-func exposeDirective() []*ast.Directive {
-	return []*ast.Directive{{
-		Name:      "expose",
-		Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
-	}}
-}
-
 func createQuery() *ast.Definition {
 	return &ast.Definition{
 		Name: "Query",
@@ -137,7 +130,7 @@ func createMutation() *ast.Definition {
 	}
 }
 
-func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
+func TestIsUnlisted(t *testing.T) {
 	schema := &ast.Schema{
 		Types: map[string]*ast.Definition{
 			"Query": {
@@ -173,10 +166,7 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 		},
 	}
 
-	middleware := filter.NewSchemaFilterWithOptions(
-		schema,
-		filter.WithExposeDirective("expose"),
-	).GetIntrospectionMiddleware()
+	exposeDirectives := []string{"expose"}
 
 	tests := []struct {
 		name       string
@@ -203,7 +193,7 @@ func TestIntrospectionFilterMiddleware_UnlistedFields(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			astField := schema.Types["Query"].Fields.ForName(testCase.fieldName)
 			assert.NotNil(t, astField)
-			assert.Equal(t, testCase.shouldHide, middleware.IsUnlisted(astField.Directives))
+			assert.Equal(t, testCase.shouldHide, filter.IsUnlisted(astField.Directives, exposeDirectives))
 		})
 	}
 }

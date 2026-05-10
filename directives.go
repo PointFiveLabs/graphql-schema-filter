@@ -15,7 +15,8 @@ func hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool
 	return false
 }
 
-func isUnlisted(directives ast.DirectiveList, exposeDirectives []string) bool {
+// IsUnlisted returns true if the directives include an expose directive with listed: false.
+func IsUnlisted(directives ast.DirectiveList, exposeDirectives []string) bool {
 	for _, name := range exposeDirectives {
 		d := directives.ForName(name)
 		if d == nil {
