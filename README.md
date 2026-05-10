@@ -147,15 +147,23 @@ Like `GetFilteredSchema` but panics on validation errors. Useful during server i
 ### `GetRuntimeFilterMiddleware`
 
 ```go
-func (fs *FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware
+func (fs FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware
 ```
 
-Returns a gqlgen middleware that enforces schema filtering at runtime on a per-request basis. Unlike `GetFilteredSchema()` which creates a separate filtered schema at build time, this middleware operates on the full schema and applies filtering rules during request execution.
+Returns a gqlgen middleware that enforces schema filtering at runtime on a per-request basis.
 
-**What it does:**
+**Execution blocking:**
 
-- **Execution blocking**: Query/Mutation fields without `@expose` are rejected with an error. Fields with `@hide` on any type are rejected.
-- **Introspection filtering**: Non-exposed Query/Mutation fields are hidden from `__Type.fields`. Fields with `@expose(listed: false)` are hidden from introspection but remain executable. `@hide` fields on nested types are hidden. `@hide` enum values are hidden from `__Type.enumValues`.
+- Query/Mutation fields without `@expose` are rejected with an error
+- Fields with `@hide` on any type are rejected
+
+**Introspection filtering:**
+
+- `__Type.fields` — non-exposed Query/Mutation fields hidden; `@expose(listed: false)` fields hidden; `@hide` fields on nested types hidden
+- `__Type.inputFields` — `@hide` input object fields hidden
+- `__Type.enumValues` — `@hide` enum values hidden
+- `__Type.interfaces` / `__Type.possibleTypes` — non-exposed types hidden
+- `__Schema.types` — non-exposed and `@hide` types hidden from the type list
 
 **Usage with gqlgen:**
 
@@ -183,7 +191,7 @@ server.Use(schemaFilter.GetRuntimeFilterMiddleware())
 ### `GetIntrospectionMiddleware`
 
 ```go
-func (fs *FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware
+func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware
 ```
 
 Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries. This is a companion to `GetFilteredSchema()` — use it when you need build-time schema filtering with runtime introspection hiding for unlisted fields.

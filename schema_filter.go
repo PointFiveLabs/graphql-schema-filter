@@ -65,7 +65,6 @@ func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
 // The filter function determines which directives to include (return true to include).
 func (fs FilteredSchema) GetDirectiveFilterMiddleware(directiveFilter func(name string) bool) *DirectiveFilterMiddleware {
 	return &DirectiveFilterMiddleware{
-		schema:          fs.Schema,
 		directiveFilter: directiveFilter,
 	}
 }

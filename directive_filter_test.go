@@ -24,10 +24,7 @@ func TestDirectiveFilterMiddleware(t *testing.T) {
 		},
 	}
 
-	middleware := filter.NewSchemaFilterWithOptions(schema,
-		filter.WithExposeDirective("expose"),
-		filter.WithHideDirective("hide"),
-	).GetDirectiveFilterMiddleware(func(name string) bool {
+	middleware := filter.NewSchemaFilterWithOptions(schema).GetDirectiveFilterMiddleware(func(name string) bool {
 		return name == "deprecated" || name == "skip"
 	})
 

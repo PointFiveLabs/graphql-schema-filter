@@ -5,13 +5,11 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/vektah/gqlparser/v2/ast"
 )
 
 // DirectiveFilterMiddleware filters which directives appear in __schema { directives }
 // introspection responses. The filter function returns true for directives to include.
 type DirectiveFilterMiddleware struct {
-	schema          *ast.Schema
 	directiveFilter func(name string) bool
 }
 

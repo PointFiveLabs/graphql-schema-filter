@@ -37,8 +37,8 @@ func getRuntimeTestSchema() *ast.Schema {
 				},
 			},
 			"User": {
-				Name: "User",
-				Kind: ast.Object,
+				Name:       "User",
+				Kind:       ast.Object,
 				Directives: exposeDirective(),
 				Fields: ast.FieldList{
 					{Name: "id"},
@@ -46,9 +46,24 @@ func getRuntimeTestSchema() *ast.Schema {
 					{Name: "internalData", Directives: []*ast.Directive{{Name: "hide"}}},
 				},
 			},
+			"CreateUserInput": {
+				Name:       "CreateUserInput",
+				Kind:       ast.InputObject,
+				Directives: exposeDirective(),
+				Fields: ast.FieldList{
+					{Name: "name"},
+					{Name: "email"},
+					{Name: "internalFlag", Directives: []*ast.Directive{{Name: "hide"}}},
+				},
+			},
+			"InternalType": {
+				Name:   "InternalType",
+				Kind:   ast.Object,
+				Fields: ast.FieldList{{Name: "id"}},
+			},
 			"Status": {
-				Name: "Status",
-				Kind: ast.Enum,
+				Name:       "Status",
+				Kind:       ast.Enum,
 				Directives: exposeDirective(),
 				EnumValues: ast.EnumValueList{
 					{Name: "ACTIVE"},
@@ -267,6 +282,116 @@ func TestRuntimeFilter_IntrospectionEnumFiltering(t *testing.T) {
 	assert.Len(t, enumValues, 2)
 	assert.Equal(t, "ACTIVE", enumValues[0].Name)
 	assert.Equal(t, "INACTIVE", enumValues[1].Name)
+}
+
+func TestRuntimeFilter_IntrospectionInputFieldFiltering(t *testing.T) {
+	schema := getRuntimeTestSchema()
+	middleware := newRuntimeFilter(schema)
+
+	inputTypeName := "CreateUserInput"
+
+	parentFC := &graphql.FieldContext{
+		Result: introspection.WrapTypeFromDef(schema, schema.Types[inputTypeName]),
+	}
+	ctx := graphql.WithFieldContext(context.Background(), parentFC)
+	childFC := &graphql.FieldContext{
+		Object: "__Type",
+		Field: graphql.CollectedField{
+			Field: &ast.Field{Name: "inputFields"},
+		},
+	}
+	ctx = graphql.WithFieldContext(ctx, childFC)
+
+	next := func(ctx context.Context) (any, error) {
+		return []introspection.InputValue{
+			{Name: "name"},
+			{Name: "email"},
+			{Name: "internalFlag"},
+		}, nil
+	}
+
+	result, err := middleware.InterceptField(ctx, next)
+	require.NoError(t, err)
+
+	inputFields, ok := result.([]introspection.InputValue)
+	require.True(t, ok)
+	assert.Len(t, inputFields, 2)
+	assert.Equal(t, "name", inputFields[0].Name)
+	assert.Equal(t, "email", inputFields[1].Name)
+}
+
+func TestRuntimeFilter_IntrospectionSchemaTypes(t *testing.T) {
+	schema := getRuntimeTestSchema()
+	middleware := newRuntimeFilter(schema)
+
+	ctx := graphql.WithFieldContext(context.Background(), &graphql.FieldContext{
+		Object: "__Schema",
+		Field: graphql.CollectedField{
+			Field: &ast.Field{Name: "types"},
+		},
+	})
+
+	next := func(ctx context.Context) (any, error) {
+		var types []introspection.Type
+		for name := range schema.Types {
+			def := schema.Types[name]
+			types = append(types, *introspection.WrapTypeFromDef(schema, def))
+		}
+		return types, nil
+	}
+
+	result, err := middleware.InterceptField(ctx, next)
+	require.NoError(t, err)
+
+	types, ok := result.([]introspection.Type)
+	require.True(t, ok)
+
+	typeNames := make(map[string]bool)
+	for _, t := range types {
+		if t.Name() != nil {
+			typeNames[*t.Name()] = true
+		}
+	}
+
+	assert.True(t, typeNames["Query"], "root type Query should be visible")
+	assert.True(t, typeNames["Mutation"], "root type Mutation should be visible")
+	assert.True(t, typeNames["User"], "exposed type User should be visible")
+	assert.True(t, typeNames["CreateUserInput"], "exposed type CreateUserInput should be visible")
+	assert.True(t, typeNames["Status"], "exposed type Status should be visible")
+	assert.False(t, typeNames["InternalType"], "unexposed type InternalType should be hidden")
+}
+
+func TestRuntimeFilter_IntrospectionTypeListFiltering(t *testing.T) {
+	schema := getRuntimeTestSchema()
+	middleware := newRuntimeFilter(schema)
+
+	userDef := schema.Types["User"]
+	parentFC := &graphql.FieldContext{
+		Result: introspection.WrapTypeFromDef(schema, userDef),
+	}
+	ctx := graphql.WithFieldContext(context.Background(), parentFC)
+	childFC := &graphql.FieldContext{
+		Object: "__Type",
+		Field: graphql.CollectedField{
+			Field: &ast.Field{Name: "interfaces"},
+		},
+	}
+	ctx = graphql.WithFieldContext(ctx, childFC)
+
+	next := func(ctx context.Context) (any, error) {
+		return []introspection.Type{
+			*introspection.WrapTypeFromDef(schema, schema.Types["User"]),
+			*introspection.WrapTypeFromDef(schema, schema.Types["InternalType"]),
+		}, nil
+	}
+
+	result, err := middleware.InterceptField(ctx, next)
+	require.NoError(t, err)
+
+	types, ok := result.([]introspection.Type)
+	require.True(t, ok)
+	assert.Len(t, types, 1)
+	assert.Equal(t, "User", *types[0].Name())
 }
 
 func TestRuntimeFilter_NilFieldContext(t *testing.T) {
