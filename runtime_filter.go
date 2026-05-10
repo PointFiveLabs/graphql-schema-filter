@@ -31,8 +31,11 @@ func (m *RuntimeFilterMiddleware) InterceptField(ctx context.Context, next graph
 		return next(ctx)
 	}
 
-	if fc.Object == "__Type" {
-		return m.interceptIntrospection(ctx, fc, next)
+	switch fc.Object {
+	case "__Type":
+		return m.interceptTypeIntrospection(ctx, fc, next)
+	case "__Schema":
+		return m.interceptSchemaIntrospection(ctx, fc, next)
 	}
 
 	return m.interceptExecution(ctx, fc, next)
@@ -71,7 +74,7 @@ func (m *RuntimeFilterMiddleware) interceptExecution(ctx context.Context, fc *gr
 	return next(ctx)
 }
 
-func (m *RuntimeFilterMiddleware) interceptIntrospection(ctx context.Context, fc *graphql.FieldContext, next graphql.Resolver) (any, error) {
+func (m *RuntimeFilterMiddleware) interceptTypeIntrospection(ctx context.Context, fc *graphql.FieldContext, next graphql.Resolver) (any, error) {
 	res, err := next(ctx)
 	if err != nil {
 		return nil, err
@@ -80,8 +83,25 @@ func (m *RuntimeFilterMiddleware) interceptIntrospection(ctx context.Context, fc
 	switch fc.Field.Name {
 	case "fields":
 		return m.filterIntrospectionFields(fc, res)
+	case "inputFields":
+		return m.filterIntrospectionInputFields(fc, res)
 	case "enumValues":
 		return m.filterIntrospectionEnumValues(fc, res)
+	case "interfaces", "possibleTypes":
+		return m.filterIntrospectionTypeList(res)
+	}
+
+	return res, nil
+}
+
+func (m *RuntimeFilterMiddleware) interceptSchemaIntrospection(ctx context.Context, fc *graphql.FieldContext, next graphql.Resolver) (any, error) {
+	res, err := next(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if fc.Field.Name == "types" {
+		return m.filterIntrospectionTypeList(res)
 	}
 
 	return res, nil
@@ -116,6 +136,35 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 	}), nil
 }
 
+func (m *RuntimeFilterMiddleware) filterIntrospectionInputFields(fc *graphql.FieldContext, res any) (any, error) {
+	typeName := getParentTypeName(fc)
+	if typeName == nil {
+		return res, nil
+	}
+
+	astType := m.schema.Types[*typeName]
+	if astType == nil || astType.Kind != ast.InputObject {
+		return res, nil
+	}
+
+	inputFields, ok := res.([]introspection.InputValue)
+	if !ok {
+		return res, nil
+	}
+
+	filtered := make([]introspection.InputValue, 0, len(inputFields))
+	for _, inputField := range inputFields {
+		astField := astType.Fields.ForName(inputField.Name)
+		if astField == nil {
+			continue
+		}
+		if !hasAnyDirective(astField.Directives, m.options.hideDirectives) {
+			filtered = append(filtered, inputField)
+		}
+	}
+	return filtered, nil
+}
+
 func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.FieldContext, res any) (any, error) {
 	typeName := getParentTypeName(fc)
 	if typeName == nil {
@@ -143,4 +192,41 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionEnumValues(fc *graphql.Fiel
 		}
 	}
 	return filtered, nil
+}
+
+func (m *RuntimeFilterMiddleware) filterIntrospectionTypeList(res any) (any, error) {
+	types, ok := res.([]introspection.Type)
+	if !ok {
+		return res, nil
+	}
+
+	filtered := make([]introspection.Type, 0, len(types))
+	for _, t := range types {
+		name := t.Name()
+		if name == nil {
+			continue
+		}
+		def := m.schema.Types[*name]
+		if def == nil {
+			continue
+		}
+		if m.shouldExposeType(def) {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered, nil
+}
+
+func (m *RuntimeFilterMiddleware) shouldExposeType(def *ast.Definition) bool {
+	if strings.HasPrefix(def.Name, "__") {
+		return true
+	}
+	if def.Kind == ast.Scalar {
+		return true
+	}
+	if def.Name == "Query" || def.Name == "Mutation" {
+		return true
+	}
+	return hasAnyDirective(def.Directives, m.options.exposeDirectives) &&
+		!hasAnyDirective(def.Directives, m.options.hideDirectives)
 }

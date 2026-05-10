@@ -30,11 +30,16 @@ func (m *DirectiveFilterMiddleware) InterceptField(ctx context.Context, next gra
 	}
 
 	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return res, err
+	}
+
 	if fc.Object == "__Schema" && fc.Field.Name == "directives" {
-		if res == nil {
-			return nil, nil
+		directives, ok := res.([]introspection.Directive)
+		if !ok {
+			return res, nil
 		}
-		return m.filterDirectives(res.([]introspection.Directive)), nil
+		return m.filterDirectives(directives), nil
 	}
 
 	return res, err
