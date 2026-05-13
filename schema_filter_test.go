@@ -3,7 +3,7 @@ package filter_test
 import (
 	"testing"
 
-	filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
+	filter "github.com/PointFiveLabs/graphql-schema-filter/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -130,7 +130,7 @@ func createMutation() *ast.Definition {
 	}
 }
 
-func TestIsUnlisted(t *testing.T) {
+func TestIsHiddenFromIntrospection(t *testing.T) {
 	schema := &ast.Schema{
 		Types: map[string]*ast.Definition{
 			"Query": {
@@ -138,21 +138,21 @@ func TestIsUnlisted(t *testing.T) {
 				Kind: ast.Object,
 				Fields: []*ast.FieldDefinition{
 					{
-						Name: "exposedListed",
+						Name: "exposedIntrospectable",
 						Directives: []*ast.Directive{{
 							Name: "expose",
 							Arguments: []*ast.Argument{{
-								Name:  "listed",
+								Name:  "introspectable",
 								Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue},
 							}},
 						}},
 					},
 					{
-						Name: "exposedUnlisted",
+						Name: "exposedHidden",
 						Directives: []*ast.Directive{{
 							Name: "expose",
 							Arguments: []*ast.Argument{{
-								Name:  "listed",
+								Name:  "introspectable",
 								Value: &ast.Value{Raw: "false", Kind: ast.BooleanValue},
 							}},
 						}},
@@ -174,13 +174,13 @@ func TestIsUnlisted(t *testing.T) {
 		shouldHide bool
 	}{
 		{
-			name:       "listed field should not be hidden",
-			fieldName:  "exposedListed",
+			name:       "introspectable field should not be hidden",
+			fieldName:  "exposedIntrospectable",
 			shouldHide: false,
 		},
 		{
-			name:       "unlisted field should be hidden",
-			fieldName:  "exposedUnlisted",
+			name:       "non-introspectable field should be hidden",
+			fieldName:  "exposedHidden",
 			shouldHide: true,
 		},
 		{
@@ -193,12 +193,12 @@ func TestIsUnlisted(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			astField := schema.Types["Query"].Fields.ForName(testCase.fieldName)
 			assert.NotNil(t, astField)
-			assert.Equal(t, testCase.shouldHide, filter.IsUnlisted(astField.Directives, exposeDirectives))
+			assert.Equal(t, testCase.shouldHide, filter.IsHiddenFromIntrospection(astField.Directives, exposeDirectives))
 		})
 	}
 }
 
-func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
+func TestGetFilteredSchema_RejectsExposeDirectiveWithoutIntrospectable(t *testing.T) {
 	tests := []struct {
 		name        string
 		schema      *ast.Schema
@@ -212,7 +212,7 @@ func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 					Fields: []*ast.FieldDefinition{
 						{Name: "validQuery", Directives: []*ast.Directive{{
 							Name:      "expose",
-							Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
+							Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 						}}},
 						{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "expose"}}},
 					},
@@ -224,14 +224,14 @@ func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 						Fields: []*ast.FieldDefinition{
 							{Name: "validQuery", Directives: []*ast.Directive{{
 								Name:      "expose",
-								Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
+								Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 							}}},
 							{Name: "invalidQuery", Directives: []*ast.Directive{{Name: "expose"}}},
 						},
 					},
 				},
 			},
-			expectedErr: `@expose directive on Query.invalidQuery is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
+			expectedErr: `@expose directive on Query.invalidQuery is missing required argument "introspectable" — use @expose(introspectable: true) or @expose(introspectable: false)`,
 		},
 		{
 			name: "bare @expose on Mutation field",
@@ -242,7 +242,7 @@ func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 					"Mutation": {Name: "Mutation", Kind: ast.Object, Fields: []*ast.FieldDefinition{{Name: "doThing", Directives: []*ast.Directive{{Name: "expose"}}}}},
 				},
 			},
-			expectedErr: `@expose directive on Mutation.doThing is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
+			expectedErr: `@expose directive on Mutation.doThing is missing required argument "introspectable" — use @expose(introspectable: true) or @expose(introspectable: false)`,
 		},
 		{
 			name: "bare @expose on type",
@@ -252,17 +252,17 @@ func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 					"User": {Name: "User", Kind: ast.Object, Directives: []*ast.Directive{{Name: "expose"}}},
 				},
 			},
-			expectedErr: `@expose directive on User is missing required argument "listed" — use @expose(listed: true) or @expose(listed: false)`,
+			expectedErr: `@expose directive on User is missing required argument "introspectable" — use @expose(introspectable: true) or @expose(introspectable: false)`,
 		},
 		{
-			name: "valid @expose(listed: true) passes",
+			name: "valid @expose(introspectable: true) passes",
 			schema: &ast.Schema{
 				Query: &ast.Definition{
 					Name: "Query",
 					Fields: []*ast.FieldDefinition{
 						{Name: "myQuery", Directives: []*ast.Directive{{
 							Name:      "expose",
-							Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
+							Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 						}}},
 					},
 				},
@@ -273,7 +273,7 @@ func TestGetFilteredSchema_RejectsExposeDirectiveWithoutListed(t *testing.T) {
 						Fields: []*ast.FieldDefinition{
 							{Name: "myQuery", Directives: []*ast.Directive{{
 								Name:      "expose",
-								Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
+								Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 							}}},
 						},
 					},

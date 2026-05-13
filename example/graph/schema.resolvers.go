@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model"
+	"github.com/PointFiveLabs/graphql-schema-filter/v3/example/graph/model"
 )
 
 // CreateTodo is the resolver for the createTodo field.

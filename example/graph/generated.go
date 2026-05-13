@@ -14,7 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model"
+	"github.com/PointFiveLabs/graphql-schema-filter/v3/example/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -44,7 +44,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Expose func(ctx context.Context, obj any, next graphql.Resolver, listed bool) (res any, err error)
+	Expose func(ctx context.Context, obj any, next graphql.Resolver, introspectable bool) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -311,24 +311,24 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) dir_expose_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.dir_expose_argsListed(ctx, rawArgs)
+	arg0, err := ec.dir_expose_argsIntrospectable(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["listed"] = arg0
+	args["introspectable"] = arg0
 	return args, nil
 }
-func (ec *executionContext) dir_expose_argsListed(
+func (ec *executionContext) dir_expose_argsIntrospectable(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (bool, error) {
-	if _, ok := rawArgs["listed"]; !ok {
+	if _, ok := rawArgs["introspectable"]; !ok {
 		var zeroVal bool
 		return zeroVal, nil
 	}
 
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("listed"))
-	if tmp, ok := rawArgs["listed"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("introspectable"))
+	if tmp, ok := rawArgs["introspectable"]; ok {
 		return ec.unmarshalNBoolean2bool(ctx, tmp)
 	}
 
@@ -357,7 +357,7 @@ func (ec *executionContext) field_Mutation_createTodo_argsInput(
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNNewTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐNewTodo(ctx, tmp)
+		return ec.unmarshalNNewTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐNewTodo(ctx, tmp)
 	}
 
 	var zeroVal model.NewTodo
@@ -531,7 +531,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal *model.Todo
 				return zeroVal, err
@@ -540,10 +540,10 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 				var zeroVal *model.Todo
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, nil, directive0, listed)
+			return ec.directives.Expose(ctx, nil, directive0, introspectable)
 		}
 		directive2 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal *model.Todo
 				return zeroVal, err
@@ -552,7 +552,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 				var zeroVal *model.Todo
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, nil, directive1, listed)
+			return ec.directives.Expose(ctx, nil, directive1, introspectable)
 		}
 
 		tmp, err := directive2(rctx)
@@ -565,7 +565,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		if data, ok := tmp.(*model.Todo); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.Todo`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v3/example/graph/model.Todo`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -579,7 +579,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Todo)
 	fc.Result = res
-	return ec.marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodo(ctx, field.Selections, res)
+	return ec.marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createTodo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -681,7 +681,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal []*model.Todo
 				return zeroVal, err
@@ -690,10 +690,10 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 				var zeroVal []*model.Todo
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, nil, directive0, listed)
+			return ec.directives.Expose(ctx, nil, directive0, introspectable)
 		}
 		directive2 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal []*model.Todo
 				return zeroVal, err
@@ -702,7 +702,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 				var zeroVal []*model.Todo
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, nil, directive1, listed)
+			return ec.directives.Expose(ctx, nil, directive1, introspectable)
 		}
 
 		tmp, err := directive2(rctx)
@@ -715,7 +715,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		if data, ok := tmp.([]*model.Todo); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.Todo`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/PointFiveLabs/graphql-schema-filter/v3/example/graph/model.Todo`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -729,7 +729,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*model.Todo)
 	fc.Result = res
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodoᚄ(ctx, field.Selections, res)
+	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodoᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_todos(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -951,7 +951,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal string
 				return zeroVal, err
@@ -960,7 +960,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 				var zeroVal string
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -1022,7 +1022,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal string
 				return zeroVal, err
@@ -1031,7 +1031,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 				var zeroVal string
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -1093,7 +1093,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal bool
 				return zeroVal, err
@@ -1102,7 +1102,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 				var zeroVal bool
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -1164,7 +1164,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal *model.User
 				return zeroVal, err
@@ -1173,10 +1173,10 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 				var zeroVal *model.User
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 		directive2 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal *model.User
 				return zeroVal, err
@@ -1185,7 +1185,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 				var zeroVal *model.User
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive1, listed)
+			return ec.directives.Expose(ctx, obj, directive1, introspectable)
 		}
 
 		tmp, err := directive2(rctx)
@@ -1198,7 +1198,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		if data, ok := tmp.(*model.User); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v2/example/graph/model.User`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/PointFiveLabs/graphql-schema-filter/v3/example/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1212,7 +1212,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Todo_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1253,7 +1253,7 @@ func (ec *executionContext) _Todo_isGlobal(ctx context.Context, field graphql.Co
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal *bool
 				return zeroVal, err
@@ -1262,7 +1262,7 @@ func (ec *executionContext) _Todo_isGlobal(ctx context.Context, field graphql.Co
 				var zeroVal *bool
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -1321,7 +1321,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal string
 				return zeroVal, err
@@ -1330,7 +1330,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 				var zeroVal string
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -1392,7 +1392,7 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+			introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 			if err != nil {
 				var zeroVal string
 				return zeroVal, err
@@ -1401,7 +1401,7 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 				var zeroVal string
 				return zeroVal, errors.New("directive expose is not implemented")
 			}
-			return ec.directives.Expose(ctx, obj, directive0, listed)
+			return ec.directives.Expose(ctx, obj, directive0, introspectable)
 		}
 
 		tmp, err := directive1(rctx)
@@ -3414,7 +3414,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
 
 			directive1 := func(ctx context.Context) (any, error) {
-				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 				if err != nil {
 					var zeroVal string
 					return zeroVal, err
@@ -3423,7 +3423,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 					var zeroVal string
 					return zeroVal, errors.New("directive expose is not implemented")
 				}
-				return ec.directives.Expose(ctx, obj, directive0, listed)
+				return ec.directives.Expose(ctx, obj, directive0, introspectable)
 			}
 
 			tmp, err := directive1(ctx)
@@ -3441,7 +3441,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalNString2string(ctx, v) }
 
 			directive1 := func(ctx context.Context) (any, error) {
-				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 				if err != nil {
 					var zeroVal string
 					return zeroVal, err
@@ -3450,7 +3450,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 					var zeroVal string
 					return zeroVal, errors.New("directive expose is not implemented")
 				}
-				return ec.directives.Expose(ctx, obj, directive0, listed)
+				return ec.directives.Expose(ctx, obj, directive0, introspectable)
 			}
 
 			tmp, err := directive1(ctx)
@@ -3468,7 +3468,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 			directive0 := func(ctx context.Context) (any, error) { return ec.unmarshalOBoolean2ᚖbool(ctx, v) }
 
 			directive1 := func(ctx context.Context) (any, error) {
-				listed, err := ec.unmarshalNBoolean2bool(ctx, true)
+				introspectable, err := ec.unmarshalNBoolean2bool(ctx, true)
 				if err != nil {
 					var zeroVal *bool
 					return zeroVal, err
@@ -3477,7 +3477,7 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj any) 
 					var zeroVal *bool
 					return zeroVal, errors.New("directive expose is not implemented")
 				}
-				return ec.directives.Expose(ctx, obj, directive0, listed)
+				return ec.directives.Expose(ctx, obj, directive0, introspectable)
 			}
 
 			tmp, err := directive1(ctx)
@@ -4121,7 +4121,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNNewTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐNewTodo(ctx context.Context, v any) (model.NewTodo, error) {
+func (ec *executionContext) unmarshalNNewTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐNewTodo(ctx context.Context, v any) (model.NewTodo, error) {
 	res, err := ec.unmarshalInputNewTodo(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -4141,11 +4141,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v model.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNTodo2githubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v model.Todo) graphql.Marshaler {
 	return ec._Todo(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Todo) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4169,7 +4169,7 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgr
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodo(ctx, sel, v[i])
+			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodo(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4189,7 +4189,7 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋPointFiveLabsᚋgr
 	return ret
 }
 
-func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐTodo(ctx context.Context, sel ast.SelectionSet, v *model.Todo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4199,7 +4199,7 @@ func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋPointFiveLabsᚋgraph
 	return ec._Todo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv2ᚋexampleᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋPointFiveLabsᚋgraphqlᚑschemaᚑfilterᚋv3ᚋexampleᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

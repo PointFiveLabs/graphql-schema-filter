@@ -12,9 +12,9 @@ type Option func(*FilterOptions)
 
 // WithExposeDirective adds a directive name that acts as an allowlist for Query/Mutation fields.
 // Fields with this directive are included in the filtered schema and executable.
-// Fields with @<name>(listed: false) are included but hidden from introspection.
-// The "listed" argument is required — GetFilteredSchema will return an error if any
-// field uses @<name> without specifying listed: true or listed: false.
+// Fields with @<name>(introspectable: false) are included but hidden from introspection.
+// The "introspectable" argument is required — GetFilteredSchema will return an error if any
+// field uses @<name> without specifying introspectable: true or introspectable: false.
 func WithExposeDirective(name string) Option {
 	return func(o *FilterOptions) {
 		o.exposeDirectives = append(o.exposeDirectives, name)

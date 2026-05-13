@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
+	filter "github.com/PointFiveLabs/graphql-schema-filter/v3"
 )
 
 func TestDirectiveFilterMiddleware(t *testing.T) {

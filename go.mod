@@ -1,4 +1,4 @@
-module github.com/PointFiveLabs/graphql-schema-filter/v2
+module github.com/PointFiveLabs/graphql-schema-filter/v3
 
 go 1.24.0
 

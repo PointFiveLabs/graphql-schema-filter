@@ -15,14 +15,14 @@ func hasAnyDirective(directives ast.DirectiveList, directiveNames []string) bool
 	return false
 }
 
-// IsUnlisted returns true if the directives include an expose directive with listed: false.
-func IsUnlisted(directives ast.DirectiveList, exposeDirectives []string) bool {
+// IsHiddenFromIntrospection returns true if the directives include an expose directive with introspectable: false.
+func IsHiddenFromIntrospection(directives ast.DirectiveList, exposeDirectives []string) bool {
 	for _, name := range exposeDirectives {
 		d := directives.ForName(name)
 		if d == nil {
 			continue
 		}
-		arg := d.Arguments.ForName("listed")
+		arg := d.Arguments.ForName("introspectable")
 		if arg != nil && arg.Value.Raw == "false" {
 			return true
 		}

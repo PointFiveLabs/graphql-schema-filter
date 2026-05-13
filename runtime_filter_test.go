@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
+	filter "github.com/PointFiveLabs/graphql-schema-filter/v3"
 )
 
 func getRuntimeTestSchema() *ast.Schema {
@@ -21,9 +21,9 @@ func getRuntimeTestSchema() *ast.Schema {
 				Kind: ast.Object,
 				Fields: ast.FieldList{
 					{Name: "publicQuery", Directives: exposeDirective()},
-					{Name: "unlistedQuery", Directives: []*ast.Directive{{
+					{Name: "hiddenQuery", Directives: []*ast.Directive{{
 						Name:      "expose",
-						Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "false", Kind: ast.BooleanValue}}},
+						Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "false", Kind: ast.BooleanValue}}},
 					}}},
 					{Name: "internalQuery"},
 				},
@@ -113,9 +113,9 @@ func TestRuntimeFilter_ExecutionBlocking(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "unlisted query is allowed (executable but hidden from introspection)",
+			name:        "non-introspectable query is allowed (executable but hidden from introspection)",
 			object:      "Query",
-			fieldName:   "unlistedQuery",
+			fieldName:   "hiddenQuery",
 			expectError: false,
 		},
 		{
@@ -187,11 +187,11 @@ func TestRuntimeFilter_IntrospectionFieldFiltering(t *testing.T) {
 		expectedFields []string
 	}{
 		{
-			name:     "root type hides non-exposed and unlisted fields",
+			name:     "root type hides non-exposed and non-introspectable fields",
 			typeName: &queryName,
 			inputFields: []introspection.Field{
 				{Name: "publicQuery"},
-				{Name: "unlistedQuery"},
+				{Name: "hiddenQuery"},
 				{Name: "internalQuery"},
 			},
 			expectedFields: []string{"publicQuery"},
