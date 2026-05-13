@@ -49,7 +49,7 @@ func (fs FilteredSchema) GetRuntimeFilterMiddleware() *RuntimeFilterMiddleware {
 	}
 }
 
-// GetIntrospectionMiddleware returns a middleware that hides @expose(listed: false)
+// GetIntrospectionMiddleware returns a middleware that hides @expose(introspectable: false)
 // fields from introspection. Companion to GetFilteredSchema for build-time filtering.
 func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware {
 	return &RuntimeFilterMiddleware{
@@ -71,7 +71,7 @@ func (fs FilteredSchema) GetDirectiveFilterMiddleware(directiveFilter func(name 
 
 // GetFilteredSchema returns a new filtered ast schema out of the full schema,
 // filtering out any fields, inputs, enums, types, queries & mutations that are not exposed.
-// Returns an error if any expose directive is missing the required "listed" argument.
+// Returns an error if any expose directive is missing the required "introspectable" argument.
 func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error) {
 	if err := fs.validateExposeDirectives(); err != nil {
 		return nil, err
@@ -89,18 +89,18 @@ func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error) {
 }
 
 // validateExposeDirectives checks that all usages of expose directives include the required
-// "listed" argument. Returns an error for the first field that violates this.
+// "introspectable" argument. Returns an error for the first field that violates this.
 func (fs FilteredSchema) validateExposeDirectives() error {
 	for _, name := range fs.options.exposeDirectives {
 		if name == "" {
 			continue
 		}
 		for _, def := range fs.Schema.Types {
-			if err := fs.validateDirectiveHasListed(name, "", def.Name, def.Directives); err != nil {
+			if err := fs.validateDirectiveHasIntrospectable(name, "", def.Name, def.Directives); err != nil {
 				return err
 			}
 			for _, field := range def.Fields {
-				if err := fs.validateDirectiveHasListed(name, def.Name, field.Name, field.Directives); err != nil {
+				if err := fs.validateDirectiveHasIntrospectable(name, def.Name, field.Name, field.Directives); err != nil {
 					return err
 				}
 			}
@@ -109,17 +109,17 @@ func (fs FilteredSchema) validateExposeDirectives() error {
 	return nil
 }
 
-func (fs FilteredSchema) validateDirectiveHasListed(directiveName, typeName, fieldName string, directives ast.DirectiveList) error {
+func (fs FilteredSchema) validateDirectiveHasIntrospectable(directiveName, typeName, fieldName string, directives ast.DirectiveList) error {
 	d := directives.ForName(directiveName)
 	if d == nil {
 		return nil
 	}
-	if d.Arguments.ForName("listed") == nil {
+	if d.Arguments.ForName("introspectable") == nil {
 		location := fieldName
 		if typeName != "" {
 			location = fmt.Sprintf("%s.%s", typeName, fieldName)
 		}
-		return fmt.Errorf("@%s directive on %s is missing required argument \"listed\" — use @%s(listed: true) or @%s(listed: false)",
+		return fmt.Errorf("@%s directive on %s is missing required argument \"introspectable\" — use @%s(introspectable: true) or @%s(introspectable: false)",
 			directiveName, location, directiveName, directiveName)
 	}
 	return nil

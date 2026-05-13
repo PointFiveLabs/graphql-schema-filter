@@ -15,7 +15,7 @@ This Go package allows you to filter a GraphQL schema based on custom directives
 To install the package, run:
 
 ```bash
-go get github.com/PointFiveLabs/graphql-schema-filter/v2
+go get github.com/PointFiveLabs/graphql-schema-filter/v3
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ import (
     "log"
 
     "github.com/vektah/gqlparser/v2/ast"
-    filter "github.com/PointFiveLabs/graphql-schema-filter/v2"
+    filter "github.com/PointFiveLabs/graphql-schema-filter/v3"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
         filter.WithHideDirective("hide"),      // Fields with @hide are removed entirely
     )
 
-    // Get the filtered schema (validates that @expose always has "listed" argument)
+    // Get the filtered schema (validates that @expose always has "introspectable" argument)
     filteredSchema, err := schemaFilter.GetFilteredSchema()
     if err != nil {
         log.Fatal(err)
@@ -83,9 +83,9 @@ The runtime filter applies the same directive rules as build-time filtering but 
 
 The filtering logic works as follows:
 
-- **@expose(listed: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
-- **@expose(listed: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()` or `GetRuntimeFilterMiddleware()`.
-- **@expose without listed**: Rejected with a validation error. The `listed` argument is always required.
+- **@expose(introspectable: true)**: Fields with this directive are included in the filtered schema and visible in introspection.
+- **@expose(introspectable: false)**: Fields with this directive are included in the filtered schema (executable) but hidden from introspection via the `GetIntrospectionMiddleware()` or `GetRuntimeFilterMiddleware()`.
+- **@expose without introspectable**: Rejected with a validation error. The `introspectable` argument is always required.
 - **@hide**: Fields with this directive are completely excluded from the filtered schema.
 - **Built-in Operations**: Built-in GraphQL operations such as `Query`, `Mutation` are supported by default.
 
@@ -94,16 +94,16 @@ The filtering logic works as follows:
 ```graphql
 type Query {
   # Visible in introspection, executable
-  publicQuery: String @expose(listed: true)
+  publicQuery: String @expose(introspectable: true)
 
-  # Hidden from introspection, but executable (like an unlisted phone number)
-  unlistedQuery: String @expose(listed: false)
+  # Hidden from introspection, but executable
+  hiddenQuery: String @expose(introspectable: false)
 
   # Not in schema at all
   privateQuery: String
 }
 
-type User @expose(listed: true) {
+type User @expose(introspectable: true) {
   id: ID!
   name: String!
   # This field is completely removed from the schema
@@ -123,7 +123,7 @@ Creates a new schema filter with flexible configuration options.
 
 **Options:**
 
-- `WithExposeDirective(name string)`: Add a directive that marks fields as exposed (included in schema). Fields with `listed: false` argument are automatically hidden from introspection.
+- `WithExposeDirective(name string)`: Add a directive that marks fields as exposed (included in schema). Fields with `introspectable: false` argument are automatically hidden from introspection.
 - `WithHideDirective(name string)`: Add a directive that marks fields as hidden (removed from schema)
 - `WithBuiltInOperations(ops []string)`: Override the default built-in operations (default: ["query", "mutation"])
 
@@ -134,7 +134,7 @@ func (fs FilteredSchema) GetFilteredSchema() (*ast.Schema, error)
 ```
 
 Returns a new filtered GraphQL schema based on the configured directives.
-Returns an error if any `@expose` directive is missing the required `listed` argument.
+Returns an error if any `@expose` directive is missing the required `introspectable` argument.
 
 ### `MustGetFilteredSchema`
 
@@ -159,7 +159,7 @@ Returns a gqlgen middleware that enforces schema filtering at runtime on a per-r
 
 **Introspection filtering:**
 
-- `__Type.fields` — non-exposed Query/Mutation fields hidden; `@expose(listed: false)` fields hidden; `@hide` fields on nested types hidden
+- `__Type.fields` — non-exposed Query/Mutation fields hidden; `@expose(introspectable: false)` fields hidden; `@hide` fields on nested types hidden
 - `__Type.inputFields` — `@hide` input object fields hidden
 - `__Type.enumValues` — `@hide` enum values hidden
 - `__Type.interfaces` / `__Type.possibleTypes` — non-exposed types hidden
@@ -194,9 +194,9 @@ server.Use(schemaFilter.GetRuntimeFilterMiddleware())
 func (fs FilteredSchema) GetIntrospectionMiddleware() *RuntimeFilterMiddleware
 ```
 
-Returns a gqlgen middleware that hides `@expose(listed: false)` fields from GraphQL introspection queries. This is a companion to `GetFilteredSchema()` — use it when you need build-time schema filtering with runtime introspection hiding for unlisted fields.
+Returns a gqlgen middleware that hides `@expose(introspectable: false)` fields from GraphQL introspection queries. This is a companion to `GetFilteredSchema()` — use it when you need build-time schema filtering with runtime introspection hiding for non-introspectable fields.
 
-> **Note:** If you are using `GetRuntimeFilterMiddleware()`, you do not need this middleware — the runtime filter already handles `@expose(listed: false)` introspection filtering.
+> **Note:** If you are using `GetRuntimeFilterMiddleware()`, you do not need this middleware — the runtime filter already handles `@expose(introspectable: false)` introspection filtering.
 
 **Usage with gqlgen:**
 
@@ -217,7 +217,7 @@ server.Use(schemaFilter.GetIntrospectionMiddleware())
 **What it does:**
 
 - Intercepts `__Type.fields` introspection queries
-- For Query and Mutation types only, filters out fields with `listed: false`
+- For Query and Mutation types only, filters out fields with `introspectable: false`
 - Regular types are not filtered (their `@hide` fields are already removed by the schema filter)
 
 ## Live Example

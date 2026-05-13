@@ -127,7 +127,7 @@ func (m *RuntimeFilterMiddleware) filterIntrospectionFields(fc *graphql.FieldCon
 	if isRootType {
 		return filterFieldList(fields, astType, func(astField *ast.FieldDefinition) bool {
 			return hasAnyDirective(astField.Directives, m.options.exposeDirectives) &&
-				!IsUnlisted(astField.Directives, m.options.exposeDirectives)
+				!IsHiddenFromIntrospection(astField.Directives, m.options.exposeDirectives)
 		}), nil
 	}
 

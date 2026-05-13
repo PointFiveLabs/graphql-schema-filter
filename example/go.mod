@@ -1,12 +1,12 @@
-module github.com/PointFiveLabs/graphql-schema-filter/v2/example
+module github.com/PointFiveLabs/graphql-schema-filter/v3/example
 
 go 1.24.0
 
-replace github.com/PointFiveLabs/graphql-schema-filter/v2 => ../
+replace github.com/PointFiveLabs/graphql-schema-filter/v3 => ../
 
 require (
 	github.com/99designs/gqlgen v0.17.66
-	github.com/PointFiveLabs/graphql-schema-filter/v2 v2.0.0-00010101000000-000000000000
+	github.com/PointFiveLabs/graphql-schema-filter/v3 v3.0.0-00010101000000-000000000000
 	github.com/vektah/gqlparser/v2 v2.5.22
 )
 

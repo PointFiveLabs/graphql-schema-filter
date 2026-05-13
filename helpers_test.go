@@ -7,6 +7,6 @@ import (
 func exposeDirective() []*ast.Directive {
 	return []*ast.Directive{{
 		Name:      "expose",
-		Arguments: []*ast.Argument{{Name: "listed", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
+		Arguments: []*ast.Argument{{Name: "introspectable", Value: &ast.Value{Raw: "true", Kind: ast.BooleanValue}}},
 	}}
 }
